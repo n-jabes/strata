@@ -3,10 +3,14 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FarmerInfo, LandData, AnalysisInput } from "../types";
-import { generateRecommendation } from "../logic/generate-recommendation";
-import { ANALYSIS_STORAGE_KEY, type StoredAnalysis } from "../types";
+import { saveAnalysis } from "../actions/save-analysis";
 
 type FormErrors = Partial<Record<string, string>>;
+
+type AnalysisFormCallbacks = {
+  onSuccess?: () => void;
+  onError?: (message: string) => void;
+};
 
 export type UseAnalysisFormReturn = {
   step: number;
@@ -44,7 +48,9 @@ function validateStep2(data: Partial<LandData>): FormErrors {
   return errors;
 }
 
-export function useAnalysisForm(): UseAnalysisFormReturn {
+export function useAnalysisForm(
+  callbacks?: AnalysisFormCallbacks
+): UseAnalysisFormReturn {
   const router = useRouter();
   const [step, setStep] = useState(1);
   const [direction, setDirection] = useState(1);
@@ -89,19 +95,22 @@ export function useAnalysisForm(): UseAnalysisFormReturn {
     setStep(n);
   };
 
+  // Fire-and-forget wrapper — keeps the public API synchronous
   const submitAnalysis = () => {
-    setIsSubmitting(true);
-    const input = { ...farmerInfo, ...landData } as AnalysisInput;
-    const result = generateRecommendation(input);
-    const stored: StoredAnalysis = {
-      input,
-      result,
-      generatedAt: new Date().toISOString(),
-    };
-    sessionStorage.setItem(ANALYSIS_STORAGE_KEY, JSON.stringify(stored));
-
-    // Small artificial delay so the loading state is visible
-    setTimeout(() => router.push("/analysis-result"), 600);
+    void (async () => {
+      setIsSubmitting(true);
+      try {
+        const input = { ...farmerInfo, ...landData } as AnalysisInput;
+        const { analysisId } = await saveAnalysis(input);
+        callbacks?.onSuccess?.();
+        router.push(`/analysis-result/${analysisId}`);
+      } catch {
+        setIsSubmitting(false);
+        callbacks?.onError?.(
+          "Unable to save analysis. Please check your connection and try again."
+        );
+      }
+    })();
   };
 
   return {

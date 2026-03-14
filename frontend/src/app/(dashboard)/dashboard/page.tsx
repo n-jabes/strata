@@ -1,52 +1,91 @@
-import { FiMap, FiLayers, FiBarChart2, FiArrowRight } from "react-icons/fi";
+import { FiMap, FiLayers, FiBarChart2, FiArrowRight, FiUsers, FiClock } from "react-icons/fi";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { FadeIn } from "@/components/animations/fade-in";
 import { formatNumber } from "@/lib/utils";
+import { cn } from "@/lib/utils";
+import { prisma } from "@/lib/prisma";
+import type { ErosionRisk } from "@/features/land-analysis/types";
 
-const stats = [
-  {
-    label: "Registered Farms",
-    value: formatNumber(0),
-    icon: FiLayers,
-    color: "bg-forest/10 text-forest",
-  },
-  {
-    label: "Land Analyses",
-    value: formatNumber(0),
-    icon: FiMap,
-    color: "bg-leaf/10 text-leaf",
-  },
-  {
-    label: "Recommendations",
-    value: formatNumber(0),
-    icon: FiBarChart2,
-    color: "bg-soil/40 text-amber-700",
-  },
-];
+const EROSION_BADGE: Record<ErosionRisk, string> = {
+  Low: "bg-green-100 text-green-700",
+  Moderate: "bg-amber-100 text-amber-700",
+  High: "bg-red-100 text-red-700",
+};
 
-const quickActions = [
-  {
-    label: "Analyze Land",
-    description: "Upload terrain data for a new analysis",
-    href: "/dashboard/analyze",
-    icon: FiMap,
-  },
-  {
-    label: "My Farms",
-    description: "View and manage registered farms",
-    href: "/dashboard/farms",
-    icon: FiLayers,
-  },
-  {
-    label: "Recommendations",
-    description: "Review crop and terrace suggestions",
-    href: "/dashboard/recommendations",
-    icon: FiBarChart2,
-  },
-];
+async function getDashboardData() {
+  try {
+    const [farmCount, analysisCount, farmerCount, recentAnalyses] =
+      await Promise.all([
+        prisma.farm.count(),
+        prisma.landAnalysis.count(),
+        prisma.farmer.count(),
+        prisma.landAnalysis.findMany({
+          take: 5,
+          orderBy: { createdAt: "desc" },
+          include: {
+            farm: { include: { farmer: true } },
+            recommendation: { select: { terraceType: true, erosionRisk: true } },
+          },
+        }),
+      ]);
+    return { farmCount, analysisCount, farmerCount, recentAnalyses };
+  } catch {
+    return {
+      farmCount: 0,
+      analysisCount: 0,
+      farmerCount: 0,
+      recentAnalyses: [],
+    };
+  }
+}
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const { farmCount, analysisCount, farmerCount, recentAnalyses } =
+    await getDashboardData();
+
+  const stats = [
+    {
+      label: "Registered Farms",
+      value: formatNumber(farmCount),
+      icon: FiLayers,
+      color: "bg-forest/10 text-forest",
+    },
+    {
+      label: "Land Analyses",
+      value: formatNumber(analysisCount),
+      icon: FiMap,
+      color: "bg-leaf/10 text-leaf",
+    },
+    {
+      label: "Farmers",
+      value: formatNumber(farmerCount),
+      icon: FiUsers,
+      color: "bg-soil/40 text-amber-700",
+    },
+  ];
+
+  const quickActions = [
+    {
+      label: "Analyze Land",
+      description: "Start a new land analysis session",
+      href: "/analyze-land",
+      icon: FiMap,
+    },
+    {
+      label: "Analysis History",
+      description: "Browse all past analyses",
+      href: "/analysis-history",
+      icon: FiClock,
+    },
+    {
+      label: "Recommendations",
+      description: "Review crop and terrace suggestions",
+      href: "/dashboard/recommendations",
+      icon: FiBarChart2,
+    },
+  ];
+
   return (
     <div className="p-6 lg:p-8 max-w-5xl">
       <FadeIn>
@@ -66,9 +105,13 @@ export default function DashboardPage() {
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">{stat.label}</p>
-                  <p className="text-3xl font-bold text-gray-900">{stat.value}</p>
+                  <p className="text-3xl font-bold text-gray-900">
+                    {stat.value}
+                  </p>
                 </div>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.color}`}>
+                <div
+                  className={`w-10 h-10 rounded-xl flex items-center justify-center ${stat.color}`}
+                >
                   <stat.icon size={18} />
                 </div>
               </div>
@@ -79,15 +122,103 @@ export default function DashboardPage() {
 
       {/* Recent Analyses */}
       <FadeIn delay={0.25}>
-        <Card
-          title="Recent Analyses"
-          description="Your latest land analysis sessions."
-          className="mb-6"
-        >
-          <div className="flex flex-col items-center justify-center h-36 rounded-xl bg-gray-50 text-sm text-gray-400 gap-2">
-            <FiMap size={24} className="text-gray-300" />
-            No analyses yet. Start by analyzing a piece of land.
+        <Card className="mb-6 overflow-hidden p-0">
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">
+                Recent Analyses
+              </h2>
+              <p className="text-xs text-gray-400 mt-0.5">
+                Your latest land analysis sessions
+              </p>
+            </div>
+            <Link
+              href="/analysis-history"
+              className="text-xs font-medium text-forest hover:text-forest-dark transition-colors flex items-center gap-1"
+            >
+              View all <FiArrowRight size={12} />
+            </Link>
           </div>
+
+          {recentAnalyses.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-36 text-sm text-gray-400 gap-2">
+              <FiMap size={24} className="text-gray-300" />
+              No analyses yet. Start by analyzing a piece of land.
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                      Farmer
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                      Location
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                      Slope
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                      Risk
+                    </th>
+                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                      Date
+                    </th>
+                    <th className="px-4 py-3" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {recentAnalyses.map((a) => {
+                    const risk = a.recommendation?.erosionRisk as
+                      | ErosionRisk
+                      | undefined;
+                    return (
+                      <tr
+                        key={a.id}
+                        className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors"
+                      >
+                        <td className="px-6 py-3 font-medium text-gray-900">
+                          {a.farm.farmer.name}
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">
+                          {a.farm.farmer.location}
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">{a.slope}°</td>
+                        <td className="px-4 py-3">
+                          {risk && (
+                            <span
+                              className={cn(
+                                "inline-flex px-2 py-0.5 rounded-full text-xs font-semibold",
+                                EROSION_BADGE[risk]
+                              )}
+                            >
+                              {risk}
+                            </span>
+                          )}
+                        </td>
+                        <td className="px-4 py-3 text-gray-400 text-xs">
+                          {a.createdAt.toLocaleDateString("en-US", {
+                            month: "short",
+                            day: "numeric",
+                            year: "numeric",
+                          })}
+                        </td>
+                        <td className="px-4 py-3">
+                          <Link
+                            href={`/analysis-result/${a.id}`}
+                            className="text-xs font-medium text-forest hover:text-forest-dark transition-colors"
+                          >
+                            View →
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </Card>
       </FadeIn>
 

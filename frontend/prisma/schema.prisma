@@ -1,0 +1,55 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model Farmer {
+  id        String   @id @default(uuid())
+  name      String
+  location  String
+  createdAt DateTime @default(now())
+
+  farms     Farm[]
+}
+
+model Farm {
+  id        String  @id @default(uuid())
+  farmSize  Float
+  altitude  Float?
+
+  farmerId  String
+  farmer    Farmer  @relation(fields: [farmerId], references: [id])
+
+  analyses  LandAnalysis[]
+
+  createdAt DateTime @default(now())
+}
+
+model LandAnalysis {
+  id       String @id @default(uuid())
+  slope    Float
+  soilType String
+  rainfall String
+
+  farmId String
+  farm   Farm   @relation(fields: [farmId], references: [id])
+
+  recommendation Recommendation?
+
+  createdAt DateTime @default(now())
+}
+
+model Recommendation {
+  id                   String   @id @default(uuid())
+  terraceType          String
+  erosionRisk          String
+  irrigationSuggestion String
+  recommendedCrops     String[]
+
+  analysisId String       @unique
+  analysis   LandAnalysis @relation(fields: [analysisId], references: [id])
+}

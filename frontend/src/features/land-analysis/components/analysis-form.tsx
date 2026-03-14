@@ -19,6 +19,8 @@ const stepVariants: Variants = {
 };
 
 export function AnalysisForm() {
+  const { toast } = useToast();
+
   const {
     step,
     direction,
@@ -32,14 +34,10 @@ export function AnalysisForm() {
     prevStep,
     goToStep,
     submitAnalysis,
-  } = useAnalysisForm();
-
-  const { toast } = useToast();
-
-  const handleSubmit = () => {
-    toast("Land analysis generated successfully!");
-    submitAnalysis();
-  };
+  } = useAnalysisForm({
+    onSuccess: () => toast("Analysis saved successfully!"),
+    onError: (msg) => toast(msg, "error"),
+  });
 
   const stepContent: Record<number, React.ReactNode> = {
     1: (
@@ -124,7 +122,7 @@ export function AnalysisForm() {
           ) : (
             <Button
               variant="primary"
-              onClick={handleSubmit}
+              onClick={submitAnalysis}
               disabled={isSubmitting}
             >
               {isSubmitting ? (

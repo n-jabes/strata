@@ -2,13 +2,14 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiHome, FiMap, FiLayers, FiBarChart2 } from "react-icons/fi";
+import { FiHome, FiMap, FiLayers, FiBarChart2, FiClock } from "react-icons/fi";
 import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
 const sidebarItems = [
   { label: "Dashboard", href: "/dashboard", icon: FiHome },
   { label: "Analyze Land", href: "/analyze-land", icon: FiMap },
+  { label: "Analysis History", href: "/analysis-history", icon: FiClock },
   { label: "My Farms", href: "/dashboard/farms", icon: FiLayers },
   { label: "Recommendations", href: "/dashboard/recommendations", icon: FiBarChart2 },
 ];

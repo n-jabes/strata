@@ -1,7 +1,5 @@
-"use client";
-
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
 import Link from "next/link";
 import {
   FiLayers,
@@ -16,9 +14,13 @@ import { Footer } from "@/components/layout/footer";
 import { Container } from "@/components/ui/container";
 import { Card } from "@/components/ui/card";
 import { FadeIn } from "@/components/animations/fade-in";
-import type { StoredAnalysis, ErosionRisk } from "@/features/land-analysis/types";
-import { ANALYSIS_STORAGE_KEY } from "@/features/land-analysis/types";
+import { prisma } from "@/lib/prisma";
 import { cn } from "@/lib/utils";
+import type { ErosionRisk } from "@/features/land-analysis/types";
+
+export const metadata: Metadata = {
+  title: "Analysis Result — STRATA",
+};
 
 const EROSION_STYLES: Record<ErosionRisk, string> = {
   Low: "bg-green-100 text-green-700",
@@ -26,33 +28,62 @@ const EROSION_STYLES: Record<ErosionRisk, string> = {
   High: "bg-red-100 text-red-700",
 };
 
-export default function AnalysisResultPage() {
-  const router = useRouter();
-  const [analysis, setAnalysis] = useState<StoredAnalysis | null>(null);
+export default async function AnalysisResultPage({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}) {
+  const { id } = await params;
 
-  useEffect(() => {
-    const stored = sessionStorage.getItem(ANALYSIS_STORAGE_KEY);
-    if (!stored) {
-      router.replace("/analyze-land");
-      return;
-    }
-    setAnalysis(JSON.parse(stored) as StoredAnalysis);
-  }, [router]);
-
-  if (!analysis) {
+  let analysis;
+  try {
+    analysis = await prisma.landAnalysis.findUnique({
+      where: { id },
+      include: {
+        recommendation: true,
+        farm: {
+          include: { farmer: true },
+        },
+      },
+    });
+  } catch {
+    // DB not reachable — show friendly error
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="w-6 h-6 rounded-full border-2 border-forest border-t-transparent animate-spin" />
-      </div>
+      <>
+        <Navbar />
+        <main className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
+          <div className="text-center">
+            <p className="text-lg font-semibold text-gray-900">
+              Database unavailable
+            </p>
+            <p className="text-sm text-gray-500 mt-1">
+              Could not load the analysis. Please try again later.
+            </p>
+            <Link
+              href="/analyze-land"
+              className="mt-4 inline-flex items-center gap-2 text-sm text-forest hover:underline"
+            >
+              <FiArrowLeft size={14} /> Back to analysis form
+            </Link>
+          </div>
+        </main>
+        <Footer />
+      </>
     );
   }
 
-  const { input, result, generatedAt } = analysis;
-  const date = new Date(generatedAt).toLocaleDateString("en-US", {
+  if (!analysis || !analysis.recommendation) notFound();
+
+  const { farm, recommendation } = analysis;
+  const { farmer } = farm;
+
+  const date = analysis.createdAt.toLocaleDateString("en-US", {
     year: "numeric",
     month: "long",
     day: "numeric",
   });
+
+  const erosionRisk = recommendation.erosionRisk as ErosionRisk;
 
   return (
     <>
@@ -67,15 +98,15 @@ export default function AnalysisResultPage() {
                   Analysis generated {date}
                 </p>
                 <h1 className="text-3xl font-bold text-gray-900">
-                  {input.name}&apos;s Analysis
+                  {farmer.name}&apos;s Analysis
                 </h1>
                 <p className="text-base text-gray-500 mt-1">
-                  {input.location} · {input.farmSize} ha
+                  {farmer.location} · {farm.farmSize} ha
                 </p>
               </div>
               <div className="flex gap-2 shrink-0">
                 <Link href="/analyze-land">
-                  <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                  <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
                     <FiRefreshCw size={14} />
                     New Analysis
                   </button>
@@ -84,16 +115,16 @@ export default function AnalysisResultPage() {
             </div>
           </FadeIn>
 
-          {/* Analysis Summary strip */}
+          {/* Input summary strip */}
           <FadeIn delay={0.05}>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-8">
               {[
-                { label: "Slope", value: `${input.slopeAngle}°` },
-                { label: "Soil Type", value: input.soilType },
-                { label: "Rainfall", value: input.rainfallLevel },
+                { label: "Slope", value: `${analysis.slope}°` },
+                { label: "Soil Type", value: analysis.soilType },
+                { label: "Rainfall", value: analysis.rainfall },
                 {
                   label: "Altitude",
-                  value: input.altitude ? `${input.altitude} m` : "Not specified",
+                  value: farm.altitude ? `${farm.altitude} m` : "Not specified",
                 },
               ].map(({ label, value }) => (
                 <div
@@ -123,7 +154,7 @@ export default function AnalysisResultPage() {
                   </h2>
                 </div>
                 <ul className="space-y-2">
-                  {result.recommendedCrops.map((crop) => (
+                  {recommendation.recommendedCrops.map((crop) => (
                     <li
                       key={crop}
                       className="flex items-center gap-2 text-sm text-gray-700"
@@ -152,10 +183,10 @@ export default function AnalysisResultPage() {
                 </p>
                 <div className="bg-forest/5 rounded-lg px-4 py-3">
                   <p className="text-base font-semibold text-forest">
-                    {result.terraceType}
+                    {recommendation.terraceType}
                   </p>
                   <p className="text-xs text-gray-500 mt-0.5">
-                    Based on a {input.slopeAngle}° slope angle
+                    Based on a {analysis.slope}° slope angle
                   </p>
                 </div>
               </Card>
@@ -178,17 +209,17 @@ export default function AnalysisResultPage() {
                 <span
                   className={cn(
                     "inline-flex items-center px-3 py-1 rounded-full text-sm font-semibold",
-                    EROSION_STYLES[result.erosionRisk]
+                    EROSION_STYLES[erosionRisk]
                   )}
                 >
-                  {result.erosionRisk} Risk
+                  {erosionRisk} Risk
                 </span>
                 <p className="text-xs text-gray-400 mt-3">
-                  {result.erosionRisk === "High" &&
+                  {erosionRisk === "High" &&
                     "Immediate soil conservation measures recommended."}
-                  {result.erosionRisk === "Moderate" &&
+                  {erosionRisk === "Moderate" &&
                     "Preventive measures advised to protect topsoil."}
-                  {result.erosionRisk === "Low" &&
+                  {erosionRisk === "Low" &&
                     "Terrain is stable. Standard maintenance applies."}
                 </p>
               </Card>
@@ -209,18 +240,25 @@ export default function AnalysisResultPage() {
                   Water management approach:
                 </p>
                 <p className="text-sm font-medium text-gray-900 leading-relaxed">
-                  {result.irrigationSuggestion}
+                  {recommendation.irrigationSuggestion}
                 </p>
                 <p className="text-xs text-gray-400 mt-2 capitalize">
-                  Rainfall level: {input.rainfallLevel}
+                  Rainfall level: {analysis.rainfall}
                 </p>
               </Card>
             </FadeIn>
           </div>
 
-          {/* Back link */}
+          {/* Footer link */}
           <FadeIn delay={0.3}>
-            <div className="mt-8">
+            <div className="mt-8 flex items-center gap-4">
+              <Link
+                href="/analysis-history"
+                className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-forest transition-colors"
+              >
+                View all analyses
+              </Link>
+              <span className="text-gray-300">·</span>
               <Link
                 href="/analyze-land"
                 className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-forest transition-colors"
