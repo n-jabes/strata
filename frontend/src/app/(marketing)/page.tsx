@@ -60,7 +60,7 @@ export default function LandingPage() {
 
               <FadeIn delay={0.2}>
                 <div className="flex flex-wrap gap-3">
-                  <Link href="/dashboard/analyze">
+                  <Link href="/analyze-land">
                     <Button variant="primary">
                       Analyze Land
                       <FiArrowRight size={16} />
@@ -135,7 +135,7 @@ export default function LandingPage() {
                 Start your first land analysis today and receive a custom
                 cultivation plan in minutes.
               </p>
-              <Link href="/dashboard/analyze">
+              <Link href="/analyze-land">
                 <Button variant="secondary">
                   Get Started Free
                   <FiArrowRight size={16} />

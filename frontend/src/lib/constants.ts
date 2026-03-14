@@ -4,17 +4,17 @@ export const APP_TAGLINE = "Smart Terraced Agriculture for Africa";
 export const PUBLIC_NAV_LINKS = [
   { label: "Features", href: "/#features" },
   { label: "About", href: "/#about" },
-  { label: "Analyze Land", href: "/dashboard/analyze" },
+  { label: "Analyze Land", href: "/analyze-land" },
 ] as const;
 
 export const AUTH_NAV_LINKS = [
   { label: "Dashboard", href: "/dashboard" },
-  { label: "Analyze Land", href: "/dashboard/analyze" },
+  { label: "Analyze Land", href: "/analyze-land" },
 ] as const;
 
 export const SIDEBAR_LINKS = [
   { label: "Dashboard", href: "/dashboard" },
-  { label: "Analyze Land", href: "/dashboard/analyze" },
+  { label: "Analyze Land", href: "/analyze-land" },
   { label: "My Farms", href: "/dashboard/farms" },
   { label: "Recommendations", href: "/dashboard/recommendations" },
 ] as const;

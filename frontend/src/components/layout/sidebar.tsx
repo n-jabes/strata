@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 
 const sidebarItems = [
   { label: "Dashboard", href: "/dashboard", icon: FiHome },
-  { label: "Analyze Land", href: "/dashboard/analyze", icon: FiMap },
+  { label: "Analyze Land", href: "/analyze-land", icon: FiMap },
   { label: "My Farms", href: "/dashboard/farms", icon: FiLayers },
   { label: "Recommendations", href: "/dashboard/recommendations", icon: FiBarChart2 },
 ];
