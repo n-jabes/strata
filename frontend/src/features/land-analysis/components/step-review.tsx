@@ -1,5 +1,6 @@
 import { FiEdit2 } from "react-icons/fi";
-import type { FarmerInfo, LandData } from "../types";
+import type { FarmOption } from "@/lib/db/farms";
+import type { FarmSelection, LandData } from "../types";
 
 type ReviewRowProps = { label: string; value: string };
 
@@ -7,7 +8,9 @@ function ReviewRow({ label, value }: ReviewRowProps) {
   return (
     <div className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
       <span className="text-sm text-gray-500">{label}</span>
-      <span className="text-sm font-medium text-gray-900 capitalize">{value}</span>
+      <span className="text-sm font-medium text-gray-900 capitalize">
+        {value}
+      </span>
     </div>
   );
 }
@@ -26,9 +29,12 @@ function ReviewSection({ title, onEdit, children }: ReviewSectionProps) {
         <button
           type="button"
           onClick={onEdit}
-          className="flex items-center gap-1.5 text-xs font-medium text-forest hover:text-forest-dark transition-colors cursor-pointer group"
+          className="flex items-center gap-1.5 text-xs font-medium text-forest hover:text-forest/80 transition-colors group"
         >
-          <FiEdit2 size={12} className="transition-transform group-hover:rotate-12" />
+          <FiEdit2
+            size={12}
+            className="transition-transform group-hover:rotate-12"
+          />
           Edit
         </button>
       </div>
@@ -38,12 +44,20 @@ function ReviewSection({ title, onEdit, children }: ReviewSectionProps) {
 }
 
 type StepReviewProps = {
-  farmerInfo: Partial<FarmerInfo>;
+  farmSelection: Partial<FarmSelection>;
   landData: Partial<LandData>;
+  farms: FarmOption[];
   onEditStep: (step: number) => void;
 };
 
-export function StepReview({ farmerInfo, landData, onEditStep }: StepReviewProps) {
+export function StepReview({
+  farmSelection,
+  landData,
+  farms,
+  onEditStep,
+}: StepReviewProps) {
+  const selectedFarm = farms.find((f) => f.id === farmSelection.farmId);
+
   return (
     <div className="space-y-5">
       <div>
@@ -55,13 +69,16 @@ export function StepReview({ farmerInfo, landData, onEditStep }: StepReviewProps
         </p>
       </div>
 
-      <ReviewSection title="Farmer Information" onEdit={() => onEditStep(1)}>
-        <ReviewRow label="Name" value={farmerInfo.name ?? "—"} />
-        <ReviewRow label="Location" value={farmerInfo.location ?? "—"} />
+      <ReviewSection title="Farm" onEdit={() => onEditStep(1)}>
+        <ReviewRow label="Name" value={selectedFarm?.name ?? "—"} />
+        <ReviewRow label="Location" value={selectedFarm?.location ?? "—"} />
         <ReviewRow
-          label="Farm Size"
-          value={farmerInfo.farmSize ? `${farmerInfo.farmSize} ha` : "—"}
+          label="Size"
+          value={selectedFarm ? `${selectedFarm.size} ha` : "—"}
         />
+        {selectedFarm?.altitude && (
+          <ReviewRow label="Altitude" value={`${selectedFarm.altitude} m`} />
+        )}
       </ReviewSection>
 
       <ReviewSection title="Land Characteristics" onEdit={() => onEditStep(2)}>
@@ -78,9 +95,6 @@ export function StepReview({ farmerInfo, landData, onEditStep }: StepReviewProps
           label="Rainfall Level"
           value={landData.rainfallLevel ?? "—"}
         />
-        {landData.altitude !== undefined && (
-          <ReviewRow label="Altitude" value={`${landData.altitude} m`} />
-        )}
       </ReviewSection>
     </div>
   );

@@ -2,20 +2,19 @@ export type SoilType = "clay" | "loam" | "sandy" | "volcanic";
 export type RainfallLevel = "low" | "moderate" | "high";
 export type ErosionRisk = "Low" | "Moderate" | "High";
 
-export type FarmerInfo = {
-  name: string;
-  location: string;
-  farmSize: number;
+/** The farm the analysis is linked to (selected in step 1). */
+export type FarmSelection = {
+  farmId: string;
 };
 
+/** Terrain + soil characteristics collected in step 2. */
 export type LandData = {
   slopeAngle: number;
   soilType: SoilType;
   rainfallLevel: RainfallLevel;
-  altitude?: number;
 };
 
-export type AnalysisInput = FarmerInfo & LandData;
+export type AnalysisInput = FarmSelection & LandData;
 
 export type AnalysisResult = {
   recommendedCrops: string[];

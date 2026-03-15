@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import { FiMap } from "react-icons/fi";
 import { Navbar } from "@/components/layout/navbar";
 import { Container } from "@/components/ui/container";
 import { AnalysisForm } from "@/features/land-analysis/components/analysis-form";
+import { auth } from "@/auth";
+import { getUserFarmsAsOptions } from "@/lib/db/farms";
 
 export const metadata: Metadata = {
   title: "Analyze Land — STRATA",
@@ -10,11 +13,20 @@ export const metadata: Metadata = {
     "Input your hillside terrain data to generate a sustainable farming plan.",
 };
 
-export default function AnalyzeLandPage() {
+export default async function AnalyzeLandPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ farmId?: string }>;
+}) {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const { farmId } = await searchParams;
+  const farms = await getUserFarmsAsOptions(session.user.id);
+
   return (
     <>
       <Navbar />
-      {/* Page is viewport-locked — the form card scrolls internally */}
       <main className="min-h-[calc(100vh-4rem)] bg-sand/30 overflow-x-hidden">
         <Container size="sm" className="py-8 flex flex-col">
           <header className="shrink-0 mb-6">
@@ -26,12 +38,13 @@ export default function AnalyzeLandPage() {
               Analyze Your Land
             </h1>
             <p className="text-sm text-gray-500 mt-1.5 max-w-md">
-              Fill in the details below and STRATA will generate a customized
-              cultivation plan for your hillside.
+              {farmId
+                ? "Land data will be saved to your selected farm."
+                : "Select a farm and fill in the terrain details to generate a cultivation plan."}
             </p>
           </header>
 
-          <AnalysisForm />
+          <AnalysisForm farms={farms} initialFarmId={farmId} />
         </Container>
       </main>
     </>

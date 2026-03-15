@@ -42,16 +42,13 @@ export default async function AnalysisResultPage({
   let analysis;
   try {
     analysis = await prisma.landAnalysis.findFirst({
-      where: { id, farm: { farmer: { userId: session.user.id } } },
+      where: { id, farm: { userId: session.user.id } },
       include: {
         recommendation: true,
-        farm: {
-          include: { farmer: true },
-        },
+        farm: true,
       },
     });
   } catch {
-    // DB not reachable — show friendly error
     return (
       <>
         <Navbar />
@@ -79,7 +76,6 @@ export default async function AnalysisResultPage({
   if (!analysis || !analysis.recommendation) notFound();
 
   const { farm, recommendation } = analysis;
-  const { farmer } = farm;
 
   const date = analysis.createdAt.toLocaleDateString("en-US", {
     year: "numeric",
@@ -92,7 +88,7 @@ export default async function AnalysisResultPage({
   return (
     <>
       <Navbar />
-      <main className="min-h-[calc(100vh-4rem)] py-12 bg-sand/30">
+      <main className="min-h-[calc(100vh-4rem)] py-10 sm:py-12 bg-sand/30">
         <Container>
           {/* Header */}
           <FadeIn>
@@ -101,16 +97,22 @@ export default async function AnalysisResultPage({
                 <p className="text-xs text-gray-400 mb-1">
                   Analysis generated {date}
                 </p>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  {farmer.name}&apos;s Analysis
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+                  {farm.name}
                 </h1>
-                <p className="text-base text-gray-500 mt-1">
-                  {farmer.location} · {farm.farmSize} ha
+                <p className="text-sm sm:text-base text-gray-500 mt-1">
+                  {farm.location} · {farm.size} ha
                 </p>
               </div>
-              <div className="flex gap-2 shrink-0">
-                <Link href="/analyze-land">
-                  <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors cursor-pointer">
+              <div className="flex flex-wrap gap-2 shrink-0">
+                <Link href={`/farms/${farm.id}`}>
+                  <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
+                    <FiLayers size={14} />
+                    Farm Details
+                  </button>
+                </Link>
+                <Link href={`/analyze-land?farmId=${farm.id}`}>
+                  <button className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
                     <FiRefreshCw size={14} />
                     New Analysis
                   </button>
@@ -128,7 +130,9 @@ export default async function AnalysisResultPage({
                 { label: "Rainfall", value: analysis.rainfall },
                 {
                   label: "Altitude",
-                  value: farm.altitude ? `${farm.altitude} m` : "Not specified",
+                  value: farm.altitude
+                    ? `${farm.altitude} m`
+                    : "Not specified",
                 },
               ].map(({ label, value }) => (
                 <div
@@ -253,9 +257,9 @@ export default async function AnalysisResultPage({
             </FadeIn>
           </div>
 
-          {/* Footer link */}
+          {/* Footer links */}
           <FadeIn delay={0.3}>
-            <div className="mt-8 flex items-center gap-4">
+            <div className="mt-8 flex flex-wrap items-center gap-4">
               <Link
                 href="/analysis-history"
                 className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-forest transition-colors"
@@ -264,11 +268,11 @@ export default async function AnalysisResultPage({
               </Link>
               <span className="text-gray-300">·</span>
               <Link
-                href="/analyze-land"
+                href={`/farms/${farm.id}`}
                 className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-forest transition-colors"
               >
                 <FiArrowLeft size={14} />
-                Back to Analysis
+                Back to Farm
               </Link>
             </div>
           </FadeIn>

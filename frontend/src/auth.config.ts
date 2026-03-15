@@ -2,6 +2,7 @@ import type { NextAuthConfig } from "next-auth";
 
 const PROTECTED_PATHS = [
   "/dashboard",
+  "/farms",
   "/analyze-land",
   "/analysis-history",
   "/analysis-result",

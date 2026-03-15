@@ -4,8 +4,8 @@ import {
   FiLayers,
   FiBarChart2,
   FiArrowRight,
-  FiUsers,
   FiClock,
+  FiTrendingUp,
 } from "react-icons/fi";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -24,29 +24,42 @@ const EROSION_BADGE: Record<ErosionRisk, string> = {
 
 async function getDashboardData(userId: string) {
   try {
-    const [farmCount, analysisCount, farmerCount, recentAnalyses] =
+    const [farmCount, analysisCount, soilGroups, recentAnalyses] =
       await Promise.all([
-        prisma.farm.count({ where: { farmer: { userId } } }),
-        prisma.landAnalysis.count({ where: { farm: { farmer: { userId } } } }),
-        prisma.farmer.count({ where: { userId } }),
+        prisma.farm.count({ where: { userId } }),
+        prisma.landAnalysis.count({ where: { farm: { userId } } }),
+        prisma.landAnalysis.groupBy({
+          by: ["soilType"],
+          where: { farm: { userId } },
+          _count: { soilType: true },
+          orderBy: { _count: { soilType: "desc" } },
+          take: 1,
+        }),
         prisma.landAnalysis.findMany({
-          where: { farm: { farmer: { userId } } },
+          where: { farm: { userId } },
           take: 5,
           orderBy: { createdAt: "desc" },
           include: {
-            farm: { include: { farmer: true } },
+            farm: true,
             recommendation: {
-              select: { terraceType: true, erosionRisk: true },
+              select: {
+                terraceType: true,
+                erosionRisk: true,
+                recommendedCrops: true,
+              },
             },
           },
         }),
       ]);
-    return { farmCount, analysisCount, farmerCount, recentAnalyses };
+
+    const topSoil = soilGroups[0]?.soilType ?? null;
+
+    return { farmCount, analysisCount, topSoil, recentAnalyses };
   } catch {
     return {
       farmCount: 0,
       analysisCount: 0,
-      farmerCount: 0,
+      topSoil: null,
       recentAnalyses: [],
     };
   }
@@ -56,7 +69,7 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const { farmCount, analysisCount, farmerCount, recentAnalyses } =
+  const { farmCount, analysisCount, topSoil, recentAnalyses } =
     await getDashboardData(session.user.id);
 
   const firstName = session.user.name?.split(" ")[0] ?? "Farmer";
@@ -75,14 +88,22 @@ export default async function DashboardPage() {
       color: "bg-leaf/10 text-leaf",
     },
     {
-      label: "Farmers",
-      value: formatNumber(farmerCount),
-      icon: FiUsers,
+      label: "Top Soil Type",
+      value: topSoil
+        ? topSoil.charAt(0).toUpperCase() + topSoil.slice(1)
+        : "—",
+      icon: FiTrendingUp,
       color: "bg-soil/40 text-amber-700",
     },
   ];
 
   const quickActions = [
+    {
+      label: "My Farms",
+      description: "View and manage your registered farms",
+      href: "/farms",
+      icon: FiLayers,
+    },
     {
       label: "Analyze Land",
       description: "Start a new land analysis session",
@@ -94,12 +115,6 @@ export default async function DashboardPage() {
       description: "Browse all past analyses",
       href: "/analysis-history",
       icon: FiClock,
-    },
-    {
-      label: "Recommendations",
-      description: "Review crop and terrace suggestions",
-      href: "/dashboard/recommendations",
-      icon: FiBarChart2,
     },
   ];
 
@@ -162,7 +177,7 @@ export default async function DashboardPage() {
           {recentAnalyses.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-36 text-sm text-gray-400 gap-2">
               <FiMap size={24} className="text-gray-300" />
-              No analyses yet. Start by analyzing a piece of land.
+              No analyses yet. Create a farm and start analyzing.
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -170,7 +185,7 @@ export default async function DashboardPage() {
                 <thead>
                   <tr className="border-b border-gray-100">
                     <th className="text-left px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
-                      Farmer
+                      Farm
                     </th>
                     <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
                       Location
@@ -198,10 +213,10 @@ export default async function DashboardPage() {
                         className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors"
                       >
                         <td className="px-4 sm:px-6 py-3 font-medium text-gray-900">
-                          {a.farm.farmer.name}
+                          {a.farm.name}
                         </td>
                         <td className="hidden sm:table-cell px-4 py-3 text-gray-500">
-                          {a.farm.farmer.location}
+                          {a.farm.location}
                         </td>
                         <td className="hidden md:table-cell px-4 py-3 text-gray-500">
                           {a.slope}°
@@ -251,7 +266,7 @@ export default async function DashboardPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {quickActions.map(({ label, description, href, icon: Icon }) => (
             <Link key={href} href={href}>
-              <Card hover className="group cursor-pointer h-full">
+              <Card hover className="group h-full">
                 <div className="w-9 h-9 rounded-lg bg-forest/10 flex items-center justify-center mb-3 group-hover:bg-forest/20 transition-colors duration-200">
                   <Icon size={16} className="text-forest" />
                 </div>

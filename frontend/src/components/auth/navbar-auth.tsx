@@ -15,6 +15,7 @@ const PUBLIC_LINKS = [
 
 const AUTH_LINKS = [
   { label: "Dashboard", href: "/dashboard" },
+  { label: "Farms", href: "/farms" },
   { label: "Analyze Land", href: "/analyze-land" },
 ];
 

@@ -17,31 +17,23 @@ export async function saveAnalysis(
     throw new Error("You must be signed in to save an analysis.");
   }
 
-  const userId = session.user.id;
+  // Verify the farm belongs to the logged-in user
+  const farm = await prisma.farm.findFirst({
+    where: { id: input.farmId, userId: session.user.id },
+    select: { id: true },
+  });
+  if (!farm) {
+    throw new Error("Farm not found or you do not have permission to use it.");
+  }
+
   const recommendation = generateRecommendation(input);
-
-  const farmer = await prisma.farmer.create({
-    data: {
-      name: input.name,
-      location: input.location,
-      userId,
-    },
-  });
-
-  const farm = await prisma.farm.create({
-    data: {
-      farmSize: input.farmSize,
-      altitude: input.altitude ?? null,
-      farmerId: farmer.id,
-    },
-  });
 
   const analysis = await prisma.landAnalysis.create({
     data: {
       slope: input.slopeAngle,
       soilType: input.soilType,
       rainfall: input.rainfallLevel,
-      farmId: farm.id,
+      farmId: input.farmId,
       recommendation: {
         create: {
           terraceType: recommendation.terraceType,

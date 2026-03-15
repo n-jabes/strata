@@ -67,19 +67,6 @@ export function StepLandData({ data, errors, onChange }: StepLandDataProps) {
         placeholder="Select rainfall level"
         error={errors.rainfallLevel}
       />
-
-      <Input
-        id="altitude"
-        label="Altitude (meters) — Optional"
-        type="number"
-        min="0"
-        placeholder="e.g. 1800"
-        value={data.altitude !== undefined ? String(data.altitude) : ""}
-        onChange={(e) => {
-          const val = parseFloat(e.target.value);
-          onChange({ altitude: isNaN(val) ? undefined : val });
-        }}
-      />
     </div>
   );
 }

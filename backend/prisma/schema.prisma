@@ -14,29 +14,19 @@ model User {
   password  String
   createdAt DateTime @default(now())
 
-  farmers Farmer[]
-}
-
-model Farmer {
-  id        String   @id @default(uuid())
-  name      String
-  location  String
-  createdAt DateTime @default(now())
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
   farms Farm[]
 }
 
 model Farm {
-  id        String @id @default(uuid())
-  farmSize  Float
+  id        String   @id @default(uuid())
+  name      String
+  location  String
+  size      Float
   altitude  Float?
   createdAt DateTime @default(now())
 
-  farmerId String
-  farmer   Farmer @relation(fields: [farmerId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   analyses LandAnalysis[]
 }

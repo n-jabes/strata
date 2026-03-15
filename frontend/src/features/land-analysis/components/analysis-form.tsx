@@ -9,8 +9,9 @@ import { StepLandData } from "./step-land-data";
 import { StepReview } from "./step-review";
 import { useToast } from "@/components/ui/toast";
 import { Button } from "@/components/ui/button";
+import type { FarmOption } from "@/lib/db/farms";
 
-const STEPS = ["Farmer Info", "Land Data", "Review"];
+const STEPS = ["Select Farm", "Land Data", "Review"];
 
 const stepVariants: Variants = {
   enter: (dir: number) => ({ opacity: 0, x: dir > 0 ? 28 : -28 }),
@@ -18,17 +19,22 @@ const stepVariants: Variants = {
   exit: (dir: number) => ({ opacity: 0, x: dir > 0 ? -28 : 28 }),
 };
 
-export function AnalysisForm() {
+interface AnalysisFormProps {
+  farms: FarmOption[];
+  initialFarmId?: string;
+}
+
+export function AnalysisForm({ farms, initialFarmId }: AnalysisFormProps) {
   const { toast } = useToast();
 
   const {
     step,
     direction,
-    farmerInfo,
+    farmSelection,
     landData,
     errors,
     isSubmitting,
-    updateFarmerInfo,
+    updateFarmSelection,
     updateLandData,
     nextStep,
     prevStep,
@@ -37,14 +43,20 @@ export function AnalysisForm() {
   } = useAnalysisForm({
     onSuccess: () => toast("Analysis saved successfully!"),
     onError: (msg) => toast(msg, "error"),
+    initialFarmId,
   });
+
+  // When a farmId is pre-supplied we skip step 1 — show only 2 steps in the indicator
+  const visibleSteps = initialFarmId ? STEPS.slice(1) : STEPS;
+  const indicatorStep = initialFarmId ? step - 1 : step;
 
   const stepContent: Record<number, React.ReactNode> = {
     1: (
       <StepFarmerInfo
-        data={farmerInfo}
+        farms={farms}
+        data={farmSelection}
         errors={errors}
-        onChange={updateFarmerInfo}
+        onChange={updateFarmSelection}
       />
     ),
     2: (
@@ -56,12 +68,15 @@ export function AnalysisForm() {
     ),
     3: (
       <StepReview
-        farmerInfo={farmerInfo}
+        farmSelection={farmSelection}
         landData={landData}
+        farms={farms}
         onEditStep={goToStep}
       />
     ),
   };
+
+  const minStep = initialFarmId ? 2 : 1;
 
   return (
     <div className="bg-white rounded-2xl shadow-lg flex flex-col h-full min-h-[70vh] max-h-[85vh] overflow-hidden">
@@ -69,14 +84,14 @@ export function AnalysisForm() {
       <div className="h-0.5 bg-gray-100 shrink-0">
         <motion.div
           className="h-full bg-gradient-to-r from-forest to-leaf"
-          animate={{ width: `${(step / STEPS.length) * 100}%` }}
+          animate={{ width: `${(indicatorStep / visibleSteps.length) * 100}%` }}
           transition={{ duration: 0.45, ease: "easeInOut" }}
         />
       </div>
 
       {/* Step indicator — pinned header */}
       <div className="px-6 sm:px-8 pt-6 pb-5 shrink-0">
-        <StepIndicator currentStep={step} steps={STEPS} />
+        <StepIndicator currentStep={indicatorStep} steps={visibleSteps} />
       </div>
 
       {/* Divider */}
@@ -84,7 +99,6 @@ export function AnalysisForm() {
 
       {/* Scrollable content area */}
       <div className="flex-1 min-h-0 overflow-y-auto form-scroll px-6 sm:px-8 py-6">
-        {/* px-px gives 1px inset so focus rings/borders aren't clipped by overflow */}
         <div className="overflow-x-hidden px-px py-px">
           <AnimatePresence mode="wait" custom={direction}>
             <motion.div
@@ -105,7 +119,7 @@ export function AnalysisForm() {
       {/* Navigation — pinned footer */}
       <div className="shrink-0 px-6 sm:px-8 py-4 border-t border-gray-100 bg-white">
         <div className="flex items-center justify-between">
-          {step > 1 ? (
+          {step > minStep ? (
             <Button variant="ghost" onClick={prevStep} disabled={isSubmitting}>
               <FiArrowLeft size={16} />
               Back
@@ -115,7 +129,11 @@ export function AnalysisForm() {
           )}
 
           {step < 3 ? (
-            <Button variant="primary" onClick={nextStep}>
+            <Button
+              variant="primary"
+              onClick={nextStep}
+              disabled={farms.length === 0}
+            >
               Continue
               <FiArrowRight size={16} />
             </Button>

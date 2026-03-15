@@ -2,24 +2,25 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import type { FarmerInfo, LandData, AnalysisInput } from "../types";
+import type { FarmSelection, LandData, AnalysisInput } from "../types";
 import { saveAnalysis } from "../actions/save-analysis";
 
 type FormErrors = Partial<Record<string, string>>;
 
-type AnalysisFormCallbacks = {
+type AnalysisFormOptions = {
   onSuccess?: () => void;
   onError?: (message: string) => void;
+  initialFarmId?: string;
 };
 
 export type UseAnalysisFormReturn = {
   step: number;
   direction: number;
-  farmerInfo: Partial<FarmerInfo>;
+  farmSelection: Partial<FarmSelection>;
   landData: Partial<LandData>;
   errors: FormErrors;
   isSubmitting: boolean;
-  updateFarmerInfo: (fields: Partial<FarmerInfo>) => void;
+  updateFarmSelection: (fields: Partial<FarmSelection>) => void;
   updateLandData: (fields: Partial<LandData>) => void;
   nextStep: () => void;
   prevStep: () => void;
@@ -27,12 +28,9 @@ export type UseAnalysisFormReturn = {
   submitAnalysis: () => void;
 };
 
-function validateStep1(data: Partial<FarmerInfo>): FormErrors {
+function validateStep1(data: Partial<FarmSelection>): FormErrors {
   const errors: FormErrors = {};
-  if (!data.name?.trim()) errors.name = "Farmer name is required";
-  if (!data.location?.trim()) errors.location = "Location is required";
-  if (!data.farmSize || isNaN(data.farmSize) || data.farmSize <= 0)
-    errors.farmSize = "Farm size must be a positive number";
+  if (!data.farmId) errors.farmId = "Please select a farm to continue.";
   return errors;
 }
 
@@ -49,18 +47,24 @@ function validateStep2(data: Partial<LandData>): FormErrors {
 }
 
 export function useAnalysisForm(
-  callbacks?: AnalysisFormCallbacks
+  options?: AnalysisFormOptions
 ): UseAnalysisFormReturn {
   const router = useRouter();
-  const [step, setStep] = useState(1);
+
+  // If a farmId was pre-supplied (via URL query param), skip step 1
+  const initialStep = options?.initialFarmId ? 2 : 1;
+
+  const [step, setStep] = useState(initialStep);
   const [direction, setDirection] = useState(1);
-  const [farmerInfo, setFarmerInfo] = useState<Partial<FarmerInfo>>({});
+  const [farmSelection, setFarmSelection] = useState<Partial<FarmSelection>>(
+    options?.initialFarmId ? { farmId: options.initialFarmId } : {}
+  );
   const [landData, setLandData] = useState<Partial<LandData>>({});
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const updateFarmerInfo = (fields: Partial<FarmerInfo>) => {
-    setFarmerInfo((prev) => ({ ...prev, ...fields }));
+  const updateFarmSelection = (fields: Partial<FarmSelection>) => {
+    setFarmSelection((prev) => ({ ...prev, ...fields }));
     setErrors({});
   };
 
@@ -71,7 +75,7 @@ export function useAnalysisForm(
 
   const nextStep = () => {
     if (step === 1) {
-      const errs = validateStep1(farmerInfo);
+      const errs = validateStep1(farmSelection);
       if (Object.keys(errs).length > 0) { setErrors(errs); return; }
     }
     if (step === 2) {
@@ -86,7 +90,7 @@ export function useAnalysisForm(
   const prevStep = () => {
     setErrors({});
     setDirection(-1);
-    setStep((prev) => Math.max(prev - 1, 1));
+    setStep((prev) => Math.max(prev - 1, options?.initialFarmId ? 2 : 1));
   };
 
   const goToStep = (n: number) => {
@@ -95,18 +99,17 @@ export function useAnalysisForm(
     setStep(n);
   };
 
-  // Fire-and-forget wrapper — keeps the public API synchronous
   const submitAnalysis = () => {
     void (async () => {
       setIsSubmitting(true);
       try {
-        const input = { ...farmerInfo, ...landData } as AnalysisInput;
+        const input = { ...farmSelection, ...landData } as AnalysisInput;
         const { analysisId } = await saveAnalysis(input);
-        callbacks?.onSuccess?.();
+        options?.onSuccess?.();
         router.push(`/analysis-result/${analysisId}`);
       } catch {
         setIsSubmitting(false);
-        callbacks?.onError?.(
+        options?.onError?.(
           "Unable to save analysis. Please check your connection and try again."
         );
       }
@@ -116,11 +119,11 @@ export function useAnalysisForm(
   return {
     step,
     direction,
-    farmerInfo,
+    farmSelection,
     landData,
     errors,
     isSubmitting,
-    updateFarmerInfo,
+    updateFarmSelection,
     updateLandData,
     nextStep,
     prevStep,

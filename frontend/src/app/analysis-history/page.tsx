@@ -24,10 +24,10 @@ const EROSION_BADGE: Record<ErosionRisk, string> = {
 async function getAnalyses(userId: string) {
   try {
     return await prisma.landAnalysis.findMany({
-      where: { farm: { farmer: { userId } } },
+      where: { farm: { userId } },
       orderBy: { createdAt: "desc" },
       include: {
-        farm: { include: { farmer: true } },
+        farm: true,
         recommendation: {
           select: { terraceType: true, erosionRisk: true },
         },
@@ -47,7 +47,7 @@ export default async function AnalysisHistoryPage() {
   return (
     <>
       <Navbar />
-      <main className="min-h-[calc(100vh-4rem)] py-12 bg-sand/30">
+      <main className="min-h-[calc(100vh-4rem)] py-10 sm:py-12 bg-sand/30">
         <Container>
           {/* Header */}
           <FadeIn>
@@ -57,10 +57,10 @@ export default async function AnalysisHistoryPage() {
                   <FiClock size={12} />
                   Analysis History
                 </div>
-                <h1 className="text-3xl font-bold text-gray-900">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
                   All Analyses
                 </h1>
-                <p className="text-base text-gray-500 mt-1">
+                <p className="text-sm sm:text-base text-gray-500 mt-1">
                   {analyses.length > 0
                     ? `${analyses.length} analysis${analyses.length !== 1 ? "es" : ""} recorded`
                     : "No analyses recorded yet"}
@@ -116,10 +116,10 @@ export default async function AnalysisHistoryPage() {
                         <div className="flex items-start justify-between mb-3">
                           <div>
                             <p className="text-sm font-semibold text-gray-900">
-                              {analysis.farm.farmer.name}
+                              {analysis.farm.name}
                             </p>
                             <p className="text-xs text-gray-400 mt-0.5">
-                              {analysis.farm.farmer.location}
+                              {analysis.farm.location}
                             </p>
                           </div>
                           {risk && (
