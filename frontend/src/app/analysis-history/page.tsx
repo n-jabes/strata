@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 import Link from "next/link";
 import { FiClock, FiMap, FiArrowRight, FiTrendingUp } from "react-icons/fi";
 import { Navbar } from "@/components/layout/navbar";
@@ -6,6 +7,7 @@ import { Footer } from "@/components/layout/footer";
 import { Container } from "@/components/ui/container";
 import { FadeIn } from "@/components/animations/fade-in";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
 import type { ErosionRisk } from "@/features/land-analysis/types";
 
@@ -19,9 +21,10 @@ const EROSION_BADGE: Record<ErosionRisk, string> = {
   High: "bg-red-100 text-red-700",
 };
 
-async function getAnalyses() {
+async function getAnalyses(userId: string) {
   try {
     return await prisma.landAnalysis.findMany({
+      where: { farm: { farmer: { userId } } },
       orderBy: { createdAt: "desc" },
       include: {
         farm: { include: { farmer: true } },
@@ -36,7 +39,10 @@ async function getAnalyses() {
 }
 
 export default async function AnalysisHistoryPage() {
-  const analyses = await getAnalyses();
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
+  const analyses = await getAnalyses(session.user.id);
 
   return (
     <>
@@ -62,7 +68,7 @@ export default async function AnalysisHistoryPage() {
               </div>
               <Link
                 href="/analyze-land"
-                className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-forest rounded-lg hover:bg-forest-dark transition-colors"
+                className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-forest rounded-lg hover:bg-forest/90 transition-colors"
               >
                 <FiMap size={14} />
                 New Analysis
@@ -71,7 +77,6 @@ export default async function AnalysisHistoryPage() {
           </FadeIn>
 
           {analyses.length === 0 ? (
-            /* Empty state */
             <FadeIn delay={0.1}>
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 flex flex-col items-center justify-center py-24 text-center">
                 <div className="w-16 h-16 rounded-2xl bg-gray-100 flex items-center justify-center mb-4">
@@ -86,14 +91,13 @@ export default async function AnalysisHistoryPage() {
                 </p>
                 <Link
                   href="/analyze-land"
-                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-forest rounded-lg hover:bg-forest-dark transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-medium text-white bg-forest rounded-lg hover:bg-forest/90 transition-colors"
                 >
                   Analyze Land <FiArrowRight size={14} />
                 </Link>
               </div>
             </FadeIn>
           ) : (
-            /* Analysis cards grid */
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {analyses.map((analysis, i) => {
                 const risk = analysis.recommendation?.erosionRisk as
@@ -109,7 +113,6 @@ export default async function AnalysisHistoryPage() {
                   <FadeIn key={analysis.id} delay={i * 0.04}>
                     <Link href={`/analysis-result/${analysis.id}`}>
                       <div className="bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 p-5 group h-full flex flex-col">
-                        {/* Top row */}
                         <div className="flex items-start justify-between mb-3">
                           <div>
                             <p className="text-sm font-semibold text-gray-900">
@@ -131,7 +134,6 @@ export default async function AnalysisHistoryPage() {
                           )}
                         </div>
 
-                        {/* Data row */}
                         <div className="grid grid-cols-3 gap-2 mb-4 flex-1">
                           {[
                             { label: "Slope", value: `${analysis.slope}°` },
@@ -152,7 +154,6 @@ export default async function AnalysisHistoryPage() {
                           ))}
                         </div>
 
-                        {/* Bottom row */}
                         <div className="flex items-center justify-between pt-3 border-t border-gray-50">
                           <p className="text-xs text-gray-400">{date}</p>
                           <span className="text-xs font-medium text-forest flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity duration-200">

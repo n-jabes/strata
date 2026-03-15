@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import Link from "next/link";
 import {
   FiLayers,
@@ -15,6 +15,7 @@ import { Container } from "@/components/ui/container";
 import { Card } from "@/components/ui/card";
 import { FadeIn } from "@/components/animations/fade-in";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
 import type { ErosionRisk } from "@/features/land-analysis/types";
 
@@ -33,12 +34,15 @@ export default async function AnalysisResultPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
   const { id } = await params;
 
   let analysis;
   try {
-    analysis = await prisma.landAnalysis.findUnique({
-      where: { id },
+    analysis = await prisma.landAnalysis.findFirst({
+      where: { id, farm: { farmer: { userId: session.user.id } } },
       include: {
         recommendation: true,
         farm: {

@@ -1,5 +1,6 @@
 "use server";
 
+import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
 import { generateRecommendation } from "../logic/generate-recommendation";
 import type { AnalysisInput } from "../types";
@@ -11,12 +12,19 @@ export type SaveAnalysisResult = {
 export async function saveAnalysis(
   input: AnalysisInput
 ): Promise<SaveAnalysisResult> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    throw new Error("You must be signed in to save an analysis.");
+  }
+
+  const userId = session.user.id;
   const recommendation = generateRecommendation(input);
 
   const farmer = await prisma.farmer.create({
     data: {
       name: input.name,
       location: input.location,
+      userId,
     },
   });
 

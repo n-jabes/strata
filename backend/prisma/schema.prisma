@@ -30,7 +30,7 @@ model Farmer {
 }
 
 model Farm {
-  id        String   @id @default(uuid())
+  id        String @id @default(uuid())
   farmSize  Float
   altitude  Float?
   createdAt DateTime @default(now())

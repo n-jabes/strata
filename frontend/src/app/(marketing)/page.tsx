@@ -36,22 +36,22 @@ export default function LandingPage() {
       <Navbar />
 
       {/* Hero */}
-      <section className="h-[calc(100vh-4rem)] flex items-center overflow-hidden py-10">
+      <section className="min-h-[calc(100vh-4rem)] flex items-center overflow-hidden py-12 sm:py-16">
         <Container>
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
             <div>
               <FadeIn>
-                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-forest bg-forest/10 px-3 py-1.5 rounded-full mb-5">
+                <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-forest bg-forest/10 px-3 py-1.5 rounded-full mb-4 sm:mb-5">
                   Launching in Africa
                 </span>
-                <h1 className="text-5xl font-bold text-gray-900 leading-tight tracking-tight mb-5">
+                <h1 className="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 leading-tight tracking-tight mb-4 sm:mb-5">
                   Smart Terraced Agriculture{" "}
                   <span className="text-forest">for Africa</span>
                 </h1>
               </FadeIn>
 
               <FadeIn delay={0.1}>
-                <p className="text-lg text-gray-500 leading-relaxed mb-8 max-w-lg">
+                <p className="text-base sm:text-lg text-gray-500 leading-relaxed mb-6 sm:mb-8 max-w-lg">
                   STRATA helps farmers analyze hillside land and generate
                   sustainable cultivation plans that protect soil and maximize
                   yield.
@@ -73,7 +73,7 @@ export default function LandingPage() {
               </FadeIn>
             </div>
 
-            {/* Illustration placeholder */}
+            {/* Illustration placeholder — hidden on mobile to save space */}
             <FadeIn delay={0.15}>
               <div className="relative hidden lg:block">
                 <div className="h-[min(52vh,360px)] w-full ml-auto rounded-3xl bg-gradient-to-br from-forest/20 via-leaf/20 to-sand overflow-hidden flex items-center justify-center">
@@ -95,21 +95,21 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section id="features" className="py-24 bg-white">
+      <section id="features" className="py-16 sm:py-24 bg-white">
         <Container>
           <FadeIn>
-            <div className="text-center mb-16">
-              <h2 className="text-3xl font-semibold text-gray-900 mb-4">
+            <div className="text-center mb-10 sm:mb-16">
+              <h2 className="text-2xl sm:text-3xl font-semibold text-gray-900 mb-4">
                 Everything you need to farm smarter
               </h2>
-              <p className="text-base text-gray-500 max-w-xl mx-auto leading-relaxed">
+              <p className="text-sm sm:text-base text-gray-500 max-w-xl mx-auto leading-relaxed">
                 From terrain analysis to crop planning — STRATA gives you the
                 tools to make informed agricultural decisions.
               </p>
             </div>
           </FadeIn>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6">
             {features.map((feature, i) => (
               <FadeIn key={feature.title} delay={i * 0.1}>
                 <FeatureCard
@@ -124,14 +124,14 @@ export default function LandingPage() {
       </section>
 
       {/* CTA */}
-      <section id="about" className="py-24">
+      <section id="about" className="py-16 sm:py-24">
         <Container>
           <FadeIn>
-            <div className="rounded-3xl bg-forest px-8 py-16 text-center">
-              <h2 className="text-3xl font-semibold text-white mb-4">
+            <div className="rounded-2xl sm:rounded-3xl bg-forest px-6 py-12 sm:px-8 sm:py-16 text-center">
+              <h2 className="text-2xl sm:text-3xl font-semibold text-white mb-4">
                 Ready to transform your land?
               </h2>
-              <p className="text-base text-white/70 mb-8 max-w-md mx-auto">
+              <p className="text-sm sm:text-base text-white/70 mb-6 sm:mb-8 max-w-md mx-auto">
                 Start your first land analysis today and receive a custom
                 cultivation plan in minutes.
               </p>

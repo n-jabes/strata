@@ -1,10 +1,19 @@
-import { FiMap, FiLayers, FiBarChart2, FiArrowRight, FiUsers, FiClock } from "react-icons/fi";
+import { redirect } from "next/navigation";
+import {
+  FiMap,
+  FiLayers,
+  FiBarChart2,
+  FiArrowRight,
+  FiUsers,
+  FiClock,
+} from "react-icons/fi";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
 import { FadeIn } from "@/components/animations/fade-in";
 import { formatNumber } from "@/lib/utils";
 import { cn } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
+import { auth } from "@/auth";
 import type { ErosionRisk } from "@/features/land-analysis/types";
 
 const EROSION_BADGE: Record<ErosionRisk, string> = {
@@ -13,19 +22,22 @@ const EROSION_BADGE: Record<ErosionRisk, string> = {
   High: "bg-red-100 text-red-700",
 };
 
-async function getDashboardData() {
+async function getDashboardData(userId: string) {
   try {
     const [farmCount, analysisCount, farmerCount, recentAnalyses] =
       await Promise.all([
-        prisma.farm.count(),
-        prisma.landAnalysis.count(),
-        prisma.farmer.count(),
+        prisma.farm.count({ where: { farmer: { userId } } }),
+        prisma.landAnalysis.count({ where: { farm: { farmer: { userId } } } }),
+        prisma.farmer.count({ where: { userId } }),
         prisma.landAnalysis.findMany({
+          where: { farm: { farmer: { userId } } },
           take: 5,
           orderBy: { createdAt: "desc" },
           include: {
             farm: { include: { farmer: true } },
-            recommendation: { select: { terraceType: true, erosionRisk: true } },
+            recommendation: {
+              select: { terraceType: true, erosionRisk: true },
+            },
           },
         }),
       ]);
@@ -41,8 +53,13 @@ async function getDashboardData() {
 }
 
 export default async function DashboardPage() {
+  const session = await auth();
+  if (!session?.user?.id) redirect("/login");
+
   const { farmCount, analysisCount, farmerCount, recentAnalyses } =
-    await getDashboardData();
+    await getDashboardData(session.user.id);
+
+  const firstName = session.user.name?.split(" ")[0] ?? "Farmer";
 
   const stats = [
     {
@@ -87,18 +104,20 @@ export default async function DashboardPage() {
   ];
 
   return (
-    <div className="p-6 lg:p-8 max-w-5xl">
+    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl">
       <FadeIn>
-        <header className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-base text-gray-500 mt-1">
-            Welcome to STRATA — your agricultural overview.
+        <header className="mb-6 sm:mb-8">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
+            Welcome back, {firstName}
+          </h1>
+          <p className="text-sm sm:text-base text-gray-500 mt-1">
+            Here&apos;s your STRATA agricultural overview.
           </p>
         </header>
       </FadeIn>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
         {stats.map((stat, i) => (
           <FadeIn key={stat.label} delay={i * 0.08}>
             <Card>
@@ -122,8 +141,8 @@ export default async function DashboardPage() {
 
       {/* Recent Analyses */}
       <FadeIn delay={0.25}>
-        <Card className="mb-6 overflow-hidden p-0">
-          <div className="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
+        <Card className="mb-4 sm:mb-6 overflow-hidden p-0">
+          <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <div>
               <h2 className="text-base font-semibold text-gray-900">
                 Recent Analyses
@@ -134,7 +153,7 @@ export default async function DashboardPage() {
             </div>
             <Link
               href="/analysis-history"
-              className="text-xs font-medium text-forest hover:text-forest-dark transition-colors flex items-center gap-1"
+              className="text-xs font-medium text-forest hover:text-forest/80 transition-colors flex items-center gap-1"
             >
               View all <FiArrowRight size={12} />
             </Link>
@@ -150,19 +169,19 @@ export default async function DashboardPage() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100">
-                    <th className="text-left px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                    <th className="text-left px-4 sm:px-6 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
                       Farmer
                     </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                    <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
                       Location
                     </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                    <th className="hidden md:table-cell text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
                       Slope
                     </th>
                     <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
                       Risk
                     </th>
-                    <th className="text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
+                    <th className="hidden sm:table-cell text-left px-4 py-3 text-xs font-semibold text-gray-400 uppercase tracking-wide">
                       Date
                     </th>
                     <th className="px-4 py-3" />
@@ -178,13 +197,15 @@ export default async function DashboardPage() {
                         key={a.id}
                         className="border-b border-gray-50 last:border-0 hover:bg-gray-50/60 transition-colors"
                       >
-                        <td className="px-6 py-3 font-medium text-gray-900">
+                        <td className="px-4 sm:px-6 py-3 font-medium text-gray-900">
                           {a.farm.farmer.name}
                         </td>
-                        <td className="px-4 py-3 text-gray-500">
+                        <td className="hidden sm:table-cell px-4 py-3 text-gray-500">
                           {a.farm.farmer.location}
                         </td>
-                        <td className="px-4 py-3 text-gray-500">{a.slope}°</td>
+                        <td className="hidden md:table-cell px-4 py-3 text-gray-500">
+                          {a.slope}°
+                        </td>
                         <td className="px-4 py-3">
                           {risk && (
                             <span
@@ -197,7 +218,7 @@ export default async function DashboardPage() {
                             </span>
                           )}
                         </td>
-                        <td className="px-4 py-3 text-gray-400 text-xs">
+                        <td className="hidden sm:table-cell px-4 py-3 text-gray-400 text-xs">
                           {a.createdAt.toLocaleDateString("en-US", {
                             month: "short",
                             day: "numeric",
@@ -207,7 +228,7 @@ export default async function DashboardPage() {
                         <td className="px-4 py-3">
                           <Link
                             href={`/analysis-result/${a.id}`}
-                            className="text-xs font-medium text-forest hover:text-forest-dark transition-colors"
+                            className="text-xs font-medium text-forest hover:text-forest/80 transition-colors"
                           >
                             View →
                           </Link>
@@ -224,10 +245,10 @@ export default async function DashboardPage() {
 
       {/* Quick Actions */}
       <FadeIn delay={0.3}>
-        <h2 className="text-lg font-semibold text-gray-900 mb-4">
+        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
           Quick Actions
         </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
           {quickActions.map(({ label, description, href, icon: Icon }) => (
             <Link key={href} href={href}>
               <Card hover className="group cursor-pointer h-full">
