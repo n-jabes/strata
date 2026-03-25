@@ -66,3 +66,28 @@ summary {
 .form-scroll::-webkit-scrollbar-thumb:hover {
   background-color: var(--color-forest-dark);
 }
+
+/* After leaflet.css: override .leaflet-container a { color: #0078A8 } (and :visited) */
+.leaflet-container .leaflet-popup-content a.farm-map-popup-cta,
+.leaflet-container .leaflet-popup-content a.farm-map-popup-cta:link,
+.leaflet-container .leaflet-popup-content a.farm-map-popup-cta:visited {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  line-height: 1.25rem;
+  font-weight: 600;
+  background-color: var(--color-forest);
+  color: #fff !important;
+  text-decoration: none !important;
+  transition: background-color 0.15s ease;
+}
+
+.leaflet-container .leaflet-popup-content a.farm-map-popup-cta:hover {
+  background-color: var(--color-forest-dark);
+  color: #fff !important;
+}

@@ -7,6 +7,7 @@ import { signOut, useSession } from "next-auth/react";
 import {
   LuLayoutDashboard,
   LuMap,
+  LuMapPin,
   LuHistory,
   LuTractor,
   LuX,
@@ -27,6 +28,7 @@ const sidebarItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LuLayoutDashboard },
   { label: "Farms", href: "/farms", icon: LuTractor },
   { label: "Analyze Land", href: "/analyze-land", icon: LuMap },
+  { label: "Farm Map", href: "/farm-map", icon: LuMapPin },
   {
     label: "Analysis History",
     href: "/analysis-history",

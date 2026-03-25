@@ -6,6 +6,7 @@ const PROTECTED_PATHS = [
   "/analyze-land",
   "/analysis-history",
   "/analysis-result",
+  "/farm-map",
 ];
 
 /**

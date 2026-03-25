@@ -9,6 +9,8 @@ export type CreateFarmInput = {
   location: string;
   size: number;
   altitude?: number | null;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 type CreateFarmResult =
@@ -38,6 +40,8 @@ export async function createFarm(
         location,
         size: input.size,
         altitude: input.altitude ?? null,
+        latitude: input.latitude ?? null,
+        longitude: input.longitude ?? null,
         userId: session.user.id,
       },
       select: { id: true },

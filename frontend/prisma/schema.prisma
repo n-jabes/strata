@@ -23,6 +23,8 @@ model Farm {
   location  String
   size      Float
   altitude  Float?
+  latitude  Float?
+  longitude Float?
   createdAt DateTime @default(now())
 
   userId String

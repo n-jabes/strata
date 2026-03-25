@@ -17,6 +17,7 @@ const AUTH_LINKS = [
   { label: "Dashboard", href: "/dashboard" },
   { label: "Farms", href: "/farms" },
   { label: "Analyze Land", href: "/analyze-land" },
+  { label: "Farm Map", href: "/farm-map" },
 ];
 
 const linkClass =

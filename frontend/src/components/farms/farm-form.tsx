@@ -13,6 +13,8 @@ type FormValues = {
   location: string;
   size: string;
   altitude: string;
+  latitude: string;
+  longitude: string;
 };
 
 type FormErrors = Partial<Record<keyof FormValues, string>>;
@@ -29,6 +31,22 @@ function validate(values: FormValues): FormErrors {
     if (isNaN(alt) || alt < 0)
       errors.altitude = "Altitude must be a positive number.";
   }
+
+  if (values.latitude) {
+    const lat = parseFloat(values.latitude);
+    if (isNaN(lat)) errors.latitude = "Latitude must be a valid number.";
+    if (!isNaN(lat) && (lat < -90 || lat > 90))
+      errors.latitude = "Latitude must be between -90 and 90.";
+  }
+
+  if (values.longitude) {
+    const lng = parseFloat(values.longitude);
+    if (isNaN(lng))
+      errors.longitude = "Longitude must be a valid number.";
+    if (!isNaN(lng) && (lng < -180 || lng > 180))
+      errors.longitude = "Longitude must be between -180 and 180.";
+  }
+
   return errors;
 }
 
@@ -41,6 +59,8 @@ export function FarmForm() {
     location: "",
     size: "",
     altitude: "",
+    latitude: "",
+    longitude: "",
   });
   const [errors, setErrors] = useState<FormErrors>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -61,6 +81,8 @@ export function FarmForm() {
       location: values.location.trim(),
       size: parseFloat(values.size),
       altitude: values.altitude ? parseFloat(values.altitude) : null,
+      latitude: values.latitude ? parseFloat(values.latitude) : null,
+      longitude: values.longitude ? parseFloat(values.longitude) : null,
     });
     setIsSubmitting(false);
 
@@ -118,6 +140,34 @@ export function FarmForm() {
         onChange={set("altitude")}
         error={errors.altitude}
       />
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <Input
+          id="latitude"
+          label="Latitude — Optional"
+          type="number"
+          min="-90"
+          max="90"
+          step="0.000001"
+          placeholder="e.g. -1.94"
+          value={values.latitude}
+          onChange={set("latitude")}
+          error={errors.latitude}
+        />
+
+        <Input
+          id="longitude"
+          label="Longitude — Optional"
+          type="number"
+          min="-180"
+          max="180"
+          step="0.000001"
+          placeholder="e.g. 30.06"
+          value={values.longitude}
+          onChange={set("longitude")}
+          error={errors.longitude}
+        />
+      </div>
 
       <div className="pt-1">
         <Button
