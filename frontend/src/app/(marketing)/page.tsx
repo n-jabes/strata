@@ -95,7 +95,19 @@ export default function LandingPage() {
       </section>
 
       {/* Features */}
-      <section id="features" className="py-16 sm:py-24 bg-white">
+      <section
+        id="features"
+        className="relative overflow-hidden py-16 sm:py-24 bg-sand/15"
+      >
+        {/* Green soil accents (matches the dashboard earth theme) */}
+        <div
+          aria-hidden="true"
+          className="absolute -top-24 left-1/3 h-72 w-72 rounded-full bg-leaf/20 blur-3xl"
+        />
+        <div
+          aria-hidden="true"
+          className="absolute top-10 right-10 h-56 w-56 rounded-full bg-soil/25 blur-3xl"
+        />
         <Container>
           <FadeIn>
             <div className="text-center mb-10 sm:mb-16">

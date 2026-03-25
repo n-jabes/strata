@@ -6,6 +6,10 @@
   --color-leaf: #73AF6F;
   --color-forest: #007E6E;
   --color-forest-dark: #005F53;
+  /* Deep earth sidebar (warm umber, distinct from main sand canvas) */
+  --color-sidebar-bg: #1a1612;
+  --color-sidebar-surface: #242019;
+  --color-sidebar-border: rgba(255, 255, 255, 0.06);
 
   --font-sans: var(--font-inter);
 

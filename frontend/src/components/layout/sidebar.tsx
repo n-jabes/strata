@@ -3,16 +3,48 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { FiHome, FiMap, FiLayers, FiClock, FiX } from "react-icons/fi";
+import { signOut, useSession } from "next-auth/react";
+import {
+  LuLayoutDashboard,
+  LuMap,
+  LuHistory,
+  LuTractor,
+  LuX,
+  LuLogOut,
+} from "react-icons/lu";
 import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
 
-const sidebarItems = [
-  { label: "Dashboard", href: "/dashboard", icon: FiHome },
-  { label: "Farms", href: "/farms", icon: FiLayers },
-  { label: "Analyze Land", href: "/analyze-land", icon: FiMap },
-  { label: "Analysis History", href: "/analysis-history", icon: FiClock },
+type NavItem = {
+  label: string;
+  href: string;
+  icon: typeof LuLayoutDashboard;
+  /** Extra path prefixes that should mark this item active */
+  activePrefixes?: string[];
+};
+
+const sidebarItems: NavItem[] = [
+  { label: "Dashboard", href: "/dashboard", icon: LuLayoutDashboard },
+  { label: "Farms", href: "/farms", icon: LuTractor },
+  { label: "Analyze Land", href: "/analyze-land", icon: LuMap },
+  {
+    label: "Analysis History",
+    href: "/analysis-history",
+    icon: LuHistory,
+    activePrefixes: ["/analysis-result"],
+  },
 ];
+
+function navIsActive(
+  pathname: string,
+  href: string,
+  activePrefixes?: string[]
+) {
+  if (pathname === href) return true;
+  if (pathname.startsWith(`${href}/`)) return true;
+  if (activePrefixes?.some((p) => pathname.startsWith(p))) return true;
+  return false;
+}
 
 interface SidebarProps {
   isOpen: boolean;
@@ -21,13 +53,12 @@ interface SidebarProps {
 
 export function Sidebar({ isOpen, onClose }: SidebarProps) {
   const pathname = usePathname();
+  const { data: session } = useSession();
 
-  // Close the mobile drawer whenever the route changes
   useEffect(() => {
     onClose();
   }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Lock body scroll while mobile drawer is open
   useEffect(() => {
     if (isOpen) {
       document.body.style.overflow = "hidden";
@@ -39,12 +70,18 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
     };
   }, [isOpen]);
 
+  const handleLogout = () => {
+    void signOut({ callbackUrl: "/" });
+  };
+
+  const user = session?.user;
+  const displayName = user?.name?.split(" ")[0] ?? "Farmer";
+
   return (
     <>
-      {/* Backdrop — mobile only */}
       <div
         className={cn(
-          "fixed inset-0 bg-black/40 z-40 lg:hidden transition-opacity duration-300",
+          "fixed inset-0 z-40 bg-sidebar-bg/60 backdrop-blur-sm lg:hidden transition-opacity duration-300",
           isOpen
             ? "opacity-100 pointer-events-auto"
             : "opacity-0 pointer-events-none"
@@ -53,77 +90,113 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
         aria-hidden="true"
       />
 
-      {/* Sidebar panel */}
       <aside
         className={cn(
-          // Positioning: fixed on mobile (drawer), sticky on desktop
           "fixed lg:sticky top-0 left-0 z-50",
-          // Size: full viewport height, fixed width
-          "h-screen w-[260px] shrink-0",
-          // Layout
-          "flex flex-col bg-white border-r border-gray-100",
-          // Mobile slide animation
-          "transition-transform duration-300 ease-in-out",
+          "h-[100dvh] w-[min(18rem,88vw)] sm:w-[17.5rem] shrink-0",
+          "flex flex-col",
+          "bg-gradient-to-b from-sidebar-bg via-sidebar-bg to-[#0f0d0a]",
+          "border-r border-sidebar-border shadow-[4px_0_24px_rgba(0,0,0,0.12)]",
+          "transition-transform duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]",
           isOpen ? "translate-x-0" : "-translate-x-full",
-          // Desktop: always visible, never translated
           "lg:translate-x-0"
         )}
       >
-        {/* Header */}
-        <div className="flex h-16 items-center justify-between px-6 border-b border-gray-100 shrink-0">
+        {/* Top accent — soil strip */}
+        <div
+          className="h-1 w-full shrink-0 bg-gradient-to-r from-soil via-forest to-leaf opacity-90"
+          aria-hidden
+        />
+
+        <div className="flex h-[3.75rem] items-center justify-between gap-2 px-5 border-b border-sidebar-border shrink-0">
           <Link
-            href="/"
-            className="text-lg font-bold text-forest tracking-tight hover:text-forest/80 transition-colors"
+            href="/dashboard"
+            onClick={() => onClose()}
+            className="group min-w-0"
           >
-            {APP_NAME}
+            <span className="block text-[0.65rem] font-semibold uppercase tracking-[0.2em] text-soil/70 group-hover:text-soil transition-colors">
+              Workspace
+            </span>
+            <span className="block text-lg font-bold tracking-tight text-white/95 group-hover:text-white truncate">
+              {APP_NAME}
+            </span>
           </Link>
-          {/* Close button — visible only on mobile */}
           <button
+            type="button"
             onClick={onClose}
-            className="lg:hidden p-1.5 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+            className="lg:hidden p-2 rounded-xl text-white/50 hover:text-white hover:bg-white/10 transition-colors"
             aria-label="Close sidebar"
           >
-            <FiX size={18} />
+            <LuX className="size-[1.125rem]" strokeWidth={2} />
           </button>
         </div>
 
-        {/* Scrollable navigation — takes remaining height */}
-        <nav className="flex-1 overflow-y-auto px-3 py-4">
-          <ul className="space-y-0.5">
-            {sidebarItems.map(({ label, href, icon: Icon }) => {
-              const isActive = pathname === href || pathname.startsWith(href + "/");
-              return (
-                <li key={href}>
-                  <Link
-                    href={href}
-                    className={cn(
-                      "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                      isActive
-                        ? "bg-forest/10 text-forest"
-                        : "text-gray-500 hover:bg-gray-50 hover:text-gray-900"
-                    )}
-                  >
-                    <Icon
-                      size={18}
+        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-5 min-h-0">
+          <p className="px-3 mb-2 text-[0.65rem] font-semibold uppercase tracking-wider text-white/35">
+            Navigate
+          </p>
+          <ul className="space-y-1">
+            {sidebarItems.map(
+              ({ label, href, icon: Icon, activePrefixes }) => {
+                const isActive = navIsActive(
+                  pathname,
+                  href,
+                  activePrefixes
+                );
+                return (
+                  <li key={href}>
+                    <Link
+                      href={href}
+                      onClick={() => onClose()}
                       className={cn(
-                        "shrink-0 transition-colors duration-200",
-                        isActive ? "text-forest" : "text-gray-400"
+                        "group relative flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all duration-200",
+                        isActive
+                          ? "text-white bg-white/[0.08] shadow-[inset_3px_0_0_0_var(--color-soil)]"
+                          : "text-white/55 hover:text-white/90 hover:bg-white/[0.05]"
                       )}
-                    />
-                    {label}
-                  </Link>
-                </li>
-              );
-            })}
+                    >
+                      <span
+                        className={cn(
+                          "flex size-9 shrink-0 items-center justify-center rounded-lg border transition-colors duration-200",
+                          isActive
+                            ? "border-soil/40 bg-soil/15 text-soil"
+                            : "border-white/10 bg-white/[0.04] text-white/45 group-hover:border-white/15 group-hover:text-soil/90"
+                        )}
+                      >
+                        <Icon className="size-[1.125rem]" strokeWidth={1.75} />
+                      </span>
+                      {label}
+                    </Link>
+                  </li>
+                );
+              }
+            )}
           </ul>
         </nav>
 
-        {/* Footer — always at the bottom */}
-        <div className="shrink-0 px-4 py-4 border-t border-gray-100">
-          <p className="text-xs text-gray-400 leading-relaxed">
-            Smart Terraced Agriculture
-            <br />
-            for Africa
+        <div className="shrink-0 p-4 pt-2 border-t border-sidebar-border space-y-3 bg-black/20">
+          {user && (
+            <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
+              <p className="text-xs font-medium text-white/90 truncate">
+                {user.name ?? displayName}
+              </p>
+              {user.email && (
+                <p className="text-[0.7rem] text-white/40 truncate mt-0.5">
+                  {user.email}
+                </p>
+              )}
+            </div>
+          )}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/25 bg-red-500/[0.12] px-3 py-2.5 text-sm font-semibold text-red-200 hover:bg-red-500/20 hover:border-red-400/35 transition-colors"
+          >
+            <LuLogOut className="size-4 shrink-0" strokeWidth={2} />
+            Log out
+          </button>
+          <p className="text-center text-[0.65rem] text-white/30 leading-relaxed px-1">
+            Smart terraced agriculture for Africa
           </p>
         </div>
       </aside>

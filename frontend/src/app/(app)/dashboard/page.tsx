@@ -2,7 +2,6 @@ import { redirect } from "next/navigation";
 import {
   FiMap,
   FiLayers,
-  FiBarChart2,
   FiArrowRight,
   FiClock,
   FiTrendingUp,

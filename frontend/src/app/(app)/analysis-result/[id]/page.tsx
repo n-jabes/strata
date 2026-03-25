@@ -9,8 +9,6 @@ import {
   FiArrowLeft,
   FiRefreshCw,
 } from "react-icons/fi";
-import { Navbar } from "@/components/layout/navbar";
-import { Footer } from "@/components/layout/footer";
 import { Container } from "@/components/ui/container";
 import { Card } from "@/components/ui/card";
 import { FadeIn } from "@/components/animations/fade-in";
@@ -50,26 +48,22 @@ export default async function AnalysisResultPage({
     });
   } catch {
     return (
-      <>
-        <Navbar />
-        <main className="min-h-[calc(100vh-4rem)] flex items-center justify-center">
-          <div className="text-center">
-            <p className="text-lg font-semibold text-gray-900">
-              Database unavailable
-            </p>
-            <p className="text-sm text-gray-500 mt-1">
-              Could not load the analysis. Please try again later.
-            </p>
-            <Link
-              href="/analyze-land"
-              className="mt-4 inline-flex items-center gap-2 text-sm text-forest hover:underline"
-            >
-              <FiArrowLeft size={14} /> Back to analysis form
-            </Link>
-          </div>
-        </main>
-        <Footer />
-      </>
+      <main className="min-h-full flex items-center justify-center py-12 px-4">
+        <div className="text-center">
+          <p className="text-lg font-semibold text-gray-900">
+            Database unavailable
+          </p>
+          <p className="text-sm text-gray-500 mt-1">
+            Could not load the analysis. Please try again later.
+          </p>
+          <Link
+            href="/analyze-land"
+            className="mt-4 inline-flex items-center gap-2 text-sm text-forest hover:underline"
+          >
+            <FiArrowLeft size={14} /> Back to analysis form
+          </Link>
+        </div>
+      </main>
     );
   }
 
@@ -86,9 +80,7 @@ export default async function AnalysisResultPage({
   const erosionRisk = recommendation.erosionRisk as ErosionRisk;
 
   return (
-    <>
-      <Navbar />
-      <main className="min-h-[calc(100vh-4rem)] py-10 sm:py-12 bg-sand/30">
+    <main className="min-h-0 py-8 sm:py-10 lg:py-12 bg-transparent">
         <Container>
           {/* Header */}
           <FadeIn>
@@ -277,8 +269,6 @@ export default async function AnalysisResultPage({
             </div>
           </FadeIn>
         </Container>
-      </main>
-      <Footer />
-    </>
+    </main>
   );
 }
