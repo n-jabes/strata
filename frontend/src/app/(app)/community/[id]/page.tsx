@@ -43,6 +43,7 @@ export default function CommunityPostDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   useEffect(() => {
     if (!postId) return;
@@ -85,10 +86,19 @@ export default function CommunityPostDetailPage() {
     router.push(`/login?callbackUrl=${encodeURIComponent(callbackPath)}`);
   }
 
+  useEffect(() => {
+    if (!showDeleteModal) return;
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && !deleting) {
+        setShowDeleteModal(false);
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [showDeleteModal, deleting]);
+
   async function handleDelete() {
     if (!post) return;
-    const ok = window.confirm("Delete this post? This cannot be undone.");
-    if (!ok) return;
     setDeleting(true);
     try {
       await deletePostRequest(post.id);
@@ -98,6 +108,7 @@ export default function CommunityPostDetailPage() {
       setError(message);
     } finally {
       setDeleting(false);
+      setShowDeleteModal(false);
     }
   }
 
@@ -131,7 +142,7 @@ export default function CommunityPostDetailPage() {
                     <Button
                       variant="secondary"
                       disabled={deleting}
-                      onClick={handleDelete}
+                      onClick={() => setShowDeleteModal(true)}
                       className="justify-center"
                     >
                       <FiTrash2 size={16} />
@@ -254,6 +265,70 @@ export default function CommunityPostDetailPage() {
           </div>
         ) : null}
       </Container>
+
+      {showDeleteModal && post ? (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="delete-post-title"
+        >
+          <button
+            type="button"
+            className="absolute inset-0 bg-[#0f0c09]/70 backdrop-blur-[2px]"
+            onClick={() => !deleting && setShowDeleteModal(false)}
+            aria-label="Close delete confirmation"
+          />
+
+          <div className="relative w-full max-w-md overflow-hidden rounded-2xl border border-[#d7c097]/35 bg-gradient-to-br from-[#1d1712] via-[#241b14] to-[#182922] p-6 shadow-[0_30px_80px_rgba(0,0,0,0.5)]">
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -right-10 -top-12 h-36 w-36 rounded-full bg-[#73af6f]/20 blur-3xl"
+            />
+            <div
+              aria-hidden
+              className="pointer-events-none absolute -left-10 -bottom-14 h-36 w-36 rounded-full bg-[#d7c097]/15 blur-3xl"
+            />
+
+            <div className="relative z-10">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-red-300/25 bg-red-500/10 px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.14em] text-red-200">
+                Destructive Action
+              </div>
+
+              <h2
+                id="delete-post-title"
+                className="text-xl font-semibold tracking-tight text-[#f7f2df]"
+              >
+                Delete this post permanently?
+              </h2>
+              <p className="mt-2 text-sm leading-relaxed text-[#e7deaf]/80">
+                This will remove{" "}
+                <span className="font-medium text-[#f7f2df]">{post.title}</span>{" "}
+                from the community feed and cannot be undone.
+              </p>
+
+              <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
+                <Button
+                  variant="ghost"
+                  disabled={deleting}
+                  onClick={() => setShowDeleteModal(false)}
+                  className="!border !border-[#d7c097]/35 !bg-[#e7deaf]/10 !text-[#f8f3df] hover:!bg-[#e7deaf]/20"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  disabled={deleting}
+                  onClick={handleDelete}
+                  className="!bg-red-600 !text-white hover:!bg-red-500"
+                >
+                  <FiTrash2 size={16} />
+                  {deleting ? "Deleting..." : "Delete Post"}
+                </Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

@@ -28,7 +28,6 @@ type NavItem = {
 
 const sidebarItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LuLayoutDashboard },
-  { label: "Profile", href: "/profile", icon: LuUser },
   { label: "Farms", href: "/farms", icon: LuTractor },
   { label: "Analyze Land", href: "/analyze-land", icon: LuMap },
   { label: "Community", href: "/community", icon: LuMessageSquare, activePrefixes: ["/community"] },
@@ -142,7 +141,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
           </button>
         </div>
 
-        <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-5 min-h-0">
+        <nav className="sidebar-scroll flex-1 overflow-y-auto overflow-x-hidden px-3 py-5 min-h-0">
           <p className="px-3 mb-2 text-[0.65rem] font-semibold uppercase tracking-wider text-white/35">
             Navigate
           </p>
@@ -187,16 +186,25 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         <div className="shrink-0 p-4 pt-2 border-t border-sidebar-border space-y-3 bg-black/20">
           {user && (
-            <div className="rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5">
-              <p className="text-xs font-medium text-white/90 truncate">
-                {user.name ?? displayName}
-              </p>
-              {user.email && (
-                <p className="text-[0.7rem] text-white/40 truncate mt-0.5">
-                  {user.email}
+            <Link
+              href="/profile"
+              onClick={() => onClose()}
+              className="group flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.04] px-3 py-2.5 transition-colors hover:border-soil/40 hover:bg-white/[0.07]"
+            >
+              <span className="flex size-9 shrink-0 items-center justify-center rounded-lg border border-soil/40 bg-soil/15 text-soil">
+                <LuUser className="size-[1.05rem]" strokeWidth={1.9} />
+              </span>
+              <span className="min-w-0">
+                <p className="text-xs font-semibold text-white/95 truncate">
+                  {user.name ?? displayName}
                 </p>
-              )}
-            </div>
+                {user.email && (
+                  <p className="text-[0.7rem] text-white/45 truncate mt-0.5">
+                    {user.email}
+                  </p>
+                )}
+              </span>
+            </Link>
           )}
           {user && (
             <button

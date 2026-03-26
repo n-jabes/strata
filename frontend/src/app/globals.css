@@ -40,8 +40,8 @@ body {
 }
 
 *::-webkit-scrollbar {
-  width: 10px;
-  height: 10px;
+  width: 8px;
+  height: 8px;
 }
 
 *::-webkit-scrollbar-track {
@@ -61,6 +61,36 @@ body {
 
 *::-webkit-scrollbar-corner {
   background: #1a1612;
+}
+
+/* Tighter premium scrollbars for dashboard content regions */
+.sidebar-scroll,
+.main-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(215, 192, 151, 0.75) rgba(26, 22, 18, 0.45);
+}
+
+.sidebar-scroll::-webkit-scrollbar,
+.main-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-track,
+.main-scroll::-webkit-scrollbar-track {
+  background: rgba(26, 22, 18, 0.35);
+  border-radius: 999px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb,
+.main-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(215, 192, 151, 0.9), rgba(115, 175, 111, 0.9));
+  border-radius: 999px;
+}
+
+.sidebar-scroll::-webkit-scrollbar-thumb:hover,
+.main-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(231, 222, 175, 0.95), rgba(0, 126, 110, 0.95));
 }
 
 /* Pointer cursor on all interactive elements globally */

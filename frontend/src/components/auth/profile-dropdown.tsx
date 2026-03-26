@@ -65,6 +65,16 @@ export function ProfileDropdown({ name, email }: ProfileDropdownProps) {
           {/* Links */}
           <div className="py-1">
             <Link
+              href="/profile"
+              onClick={() => {
+                setOpen(false);
+              }}
+              className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-forest/5 hover:text-forest transition-colors"
+            >
+              <FiUser size={14} />
+              Profile
+            </Link>
+            <Link
               href="/dashboard"
               onClick={() => { setOpen(false); }}
               className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-forest/5 hover:text-forest transition-colors"
