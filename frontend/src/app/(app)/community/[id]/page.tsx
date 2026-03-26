@@ -152,39 +152,6 @@ export default function CommunityPostDetailPage() {
       ? ((session?.user as Record<string, unknown>).email as string)
       : null;
 
-  // Debug: helps verify ownership gating for comment edit/delete icons.
-  // (Only logs in development to avoid polluting production.)
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
-    // eslint-disable-next-line no-console
-    console.log("[CommunityComments] viewer", {
-      isLoggedIn,
-      viewerUserId,
-      viewerEmail,
-      sessionUser: session?.user ?? null,
-    });
-  }, [isLoggedIn, viewerUserId, viewerEmail, session]);
-
-  useEffect(() => {
-    if (process.env.NODE_ENV !== "development") return;
-    if (!comments.length) return;
-
-    // eslint-disable-next-line no-console
-    console.log("[CommunityComments] render comments snapshot", {
-      comments: comments.slice(0, 5).map((c) => ({
-        id: c.id,
-        userId: c.userId,
-        userEmail: c.user?.email,
-        parentCommentId: c.parentCommentId ?? null,
-        replies: c.replies?.slice(0, 3).map((r) => ({
-          id: r.id,
-          userId: r.userId,
-          userEmail: r.user?.email,
-        })),
-      })),
-    });
-  }, [comments]);
-
   function isCommentOwned(comment: CommunityPostComment) {
     if (viewerUserId) return comment.userId === viewerUserId;
     if (viewerEmail && comment.user.email) return comment.user.email === viewerEmail;
@@ -730,47 +697,6 @@ export default function CommunityPostDetailPage() {
                     </Button>
                   ) : null}
                 </div>
-
-                {process.env.NODE_ENV === "development" ? (
-                  <div className="mb-3 text-xs text-gray-500 leading-relaxed">
-                    <div>
-                      viewerUserId:{" "}
-                      <span className="font-mono text-gray-700">
-                        {viewerUserId ?? "null"}
-                      </span>
-                    </div>
-                    <div>
-                      viewerEmail:{" "}
-                      <span className="font-mono text-gray-700">
-                        {viewerEmail ?? "null"}
-                      </span>
-                    </div>
-                    <div className="mt-1">
-                      firstComment userId:{" "}
-                      <span className="font-mono text-gray-700">
-                        {comments[0]?.userId ?? "null"}
-                      </span>
-                    </div>
-                    <div>
-                      firstComment email:{" "}
-                      <span className="font-mono text-gray-700">
-                        {comments[0]?.user.email ?? "null"}
-                      </span>
-                    </div>
-                    <div className="mt-1">
-                      firstReply userId:{" "}
-                      <span className="font-mono text-gray-700">
-                        {comments[0]?.replies?.[0]?.userId ?? "null"}
-                      </span>
-                    </div>
-                    <div>
-                      firstReply email:{" "}
-                      <span className="font-mono text-gray-700">
-                        {comments[0]?.replies?.[0]?.user.email ?? "null"}
-                      </span>
-                    </div>
-                  </div>
-                ) : null}
 
                 {isLoggedIn ? (
                   <form onSubmit={handleCommentSubmit} className="mb-5 space-y-3">
