@@ -58,13 +58,18 @@ export async function listPosts(query: ListPostsQuery) {
     ];
   }
 
-  return prisma.post.findMany({
-    where,
-    skip: query.skip,
-    take: query.take,
-    orderBy: { createdAt: "desc" },
-    include: postInclude,
-  });
+  const [posts, total] = await prisma.$transaction([
+    prisma.post.findMany({
+      where,
+      skip: query.skip,
+      take: query.take,
+      orderBy: { createdAt: "desc" },
+      include: postInclude,
+    }),
+    prisma.post.count({ where }),
+  ]);
+
+  return { posts, total };
 }
 
 export async function getPostById(postId: string) {

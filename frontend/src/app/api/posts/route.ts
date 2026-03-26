@@ -50,13 +50,18 @@ export async function GET(request: Request) {
     return zodErrorResponse(parsed.error);
   }
 
-  const posts = await listPosts(parsed.data);
+  const { posts, total } = await listPosts(parsed.data);
+  const nextSkip = parsed.data.skip + posts.length;
+  const hasMore = nextSkip < total;
   return NextResponse.json({
     posts,
     meta: {
       count: posts.length,
+      total,
       skip: parsed.data.skip,
       take: parsed.data.take,
+      nextSkip: hasMore ? nextSkip : null,
+      hasMore,
     },
   });
 }

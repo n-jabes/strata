@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FadeIn } from "@/components/animations/fade-in";
@@ -14,6 +14,9 @@ import type { CommunityPostCategory } from "@/lib/community-posts";
 import { FiArrowRight, FiMessageSquare, FiTrendingUp } from "react-icons/fi";
 import type { CommunityPost } from "@/features/community/posts/types";
 import { getPosts } from "@/features/community/posts/api";
+import { usePostEngagement } from "@/features/community/posts/usePostEngagement";
+
+const PAGE_SIZE = 20;
 
 function isCategory(value: string | null): value is CommunityPostCategory {
   return !!value && (COMMUNITY_POST_CATEGORIES as readonly string[]).includes(value);
@@ -47,7 +50,16 @@ export default function CommunityFeedPage() {
 
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [hasMore, setHasMore] = useState(false);
+  const [nextSkip, setNextSkip] = useState<number | null>(0);
+  const [totalPosts, setTotalPosts] = useState(0);
+  const [initialLoadDone, setInitialLoadDone] = useState(false);
+  const [initialTake, setInitialTake] = useState(PAGE_SIZE);
+  const loadMoreRef = useRef<HTMLDivElement | null>(null);
+  const isFetchingRef = useRef(false);
+  const didHydrateFromUrlRef = useRef(false);
 
   useEffect(() => {
     const c = searchParams.get("category");
@@ -56,6 +68,17 @@ export default function CommunityFeedPage() {
 
     setHashtags(searchParams.get("hashtags") ?? "");
     setSearch(searchParams.get("search") ?? "");
+
+    // Hydrate the initial page window from URL once.
+    if (!didHydrateFromUrlRef.current) {
+      const rawLoaded = Number(searchParams.get("loaded") ?? PAGE_SIZE);
+      const sanitizedLoaded =
+        Number.isFinite(rawLoaded) && rawLoaded >= PAGE_SIZE
+          ? Math.min(rawLoaded, 200)
+          : PAGE_SIZE;
+      setInitialTake(sanitizedLoaded);
+      didHydrateFromUrlRef.current = true;
+    }
   }, [searchParams]);
 
   const categoryOptions = useMemo(
@@ -69,30 +92,85 @@ export default function CommunityFeedPage() {
     []
   );
 
-  async function load() {
-    setLoading(true);
+  function syncFeedUrl(loadedCount: number) {
+    const qs = new URLSearchParams();
+    if (category) qs.set("category", category);
+    if (hashtags) qs.set("hashtags", hashtags);
+    if (search) qs.set("search", search);
+    if (loadedCount > PAGE_SIZE) qs.set("loaded", String(loadedCount));
+    const query = qs.toString();
+    router.replace(query ? `/community?${query}` : "/community", { scroll: false });
+  }
+
+  async function load(reset = false) {
+    if (isFetchingRef.current) return;
+    const skip = reset ? 0 : (nextSkip ?? 0);
+    if (!reset && (!hasMore || nextSkip === null)) return;
+
+    isFetchingRef.current = true;
+    if (reset) setLoading(true);
+    else setLoadingMore(true);
     setError(null);
     try {
       const data = await getPosts({
         category: category || undefined,
         hashtags: hashtags || undefined,
         search: search || undefined,
-        take: 20,
-        skip: 0,
+        take: reset ? initialTake : PAGE_SIZE,
+        skip,
       });
-      setPosts(data.posts);
+      const incoming = data.posts ?? [];
+      setTotalPosts(data.meta?.total ?? 0);
+      let mergedLength = incoming.length;
+      setPosts((prev) => {
+        if (reset) return incoming;
+        const merged = [...prev, ...incoming].filter(
+          (post, idx, all) => all.findIndex((p) => p.id === post.id) === idx
+        );
+        mergedLength = merged.length;
+        return merged;
+      });
+      if (reset) {
+        syncFeedUrl(incoming.length);
+      } else {
+        syncFeedUrl(mergedLength);
+      }
+      setHasMore(Boolean(data.meta?.hasMore));
+      setNextSkip(data.meta?.nextSkip ?? null);
     } catch (err) {
       const message = err instanceof Error ? err.message : "Failed to load posts";
       setError(message);
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+      setInitialLoadDone(true);
+      isFetchingRef.current = false;
     }
   }
 
   useEffect(() => {
-    void load();
+    setPosts([]);
+    setNextSkip(0);
+    setHasMore(false);
+    setInitialLoadDone(false);
+    void load(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, hashtags, search]);
+  }, [category, hashtags, search, initialTake]);
+
+  useEffect(() => {
+    if (!loadMoreRef.current || !hasMore || loading || loadingMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) {
+          void load(false);
+        }
+      },
+      { rootMargin: "200px 0px" }
+    );
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasMore, loading, loadingMore, nextSkip]);
 
   return (
     <main className="min-h-0 py-8 sm:py-10 lg:py-12 bg-transparent">
@@ -125,6 +203,15 @@ export default function CommunityFeedPage() {
 
         <FadeIn delay={0.08}>
           <Card className="rounded-2xl shadow-sm border border-gray-100 p-5 mb-6">
+            <div className="mb-4 flex items-center justify-between">
+              <div className="text-xs text-gray-500">
+                Showing{" "}
+                <span className="font-semibold text-gray-700">{posts.length}</span>
+                {" "}of{" "}
+                <span className="font-semibold text-gray-700">{totalPosts}</span>
+                {" "}posts
+              </div>
+            </div>
             <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
               <Select
                 id="category"
@@ -158,6 +245,7 @@ export default function CommunityFeedPage() {
                     if (category) qs.set("category", category);
                     if (hashtags) qs.set("hashtags", hashtags);
                     if (search) qs.set("search", search);
+                    setInitialTake(PAGE_SIZE);
                     router.push(`/community?${qs.toString()}`);
                   }}
                   disabled={loading}
@@ -176,6 +264,7 @@ export default function CommunityFeedPage() {
                     setCategory("");
                     setHashtags("");
                     setSearch("");
+                    setInitialTake(PAGE_SIZE);
                     router.push("/community");
                   }}
                   disabled={loading}
@@ -195,10 +284,12 @@ export default function CommunityFeedPage() {
           </FadeIn>
         )}
 
-        {loading ? (
+        {loading && !initialLoadDone ? (
           <FadeIn delay={0.1}>
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center text-sm text-gray-500">
-              Loading posts…
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {Array.from({ length: 6 }).map((_, idx) => (
+                <PostCardSkeleton key={`skeleton-initial-${idx}`} />
+              ))}
             </div>
           </FadeIn>
         ) : posts.length === 0 ? (
@@ -217,81 +308,129 @@ export default function CommunityFeedPage() {
           <FadeIn delay={0.12}>
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
               {posts.map((post) => (
-                <Link key={post.id} href={`/community/${post.id}`}>
-                  <Card
-                    hover
-                    className="rounded-2xl border border-gray-100 p-5 h-full"
-                    // Card hover uses framer motion; className controls layout
-                  >
-                    <div className="flex items-start justify-between gap-3 mb-3">
-                      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${typeBadgeClass(post.type)}`}>
-                        {post.type}
-                      </span>
-                      <span className="text-xs text-gray-400">
-                        {post.category}
-                      </span>
-                    </div>
-
-                    {post.type !== "TEXT" && post.mediaUrl ? (
-                      <div className="mb-3 rounded-xl overflow-hidden border border-gray-100 bg-gray-50">
-                        {post.type === "IMAGE" ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={post.mediaUrl}
-                            alt={post.title}
-                            className="w-full h-36 object-cover"
-                          />
-                        ) : (
-                          <video
-                            src={post.mediaUrl}
-                            className="w-full h-36 object-cover bg-black/5"
-                            muted
-                            controls={false}
-                          />
-                        )}
-                      </div>
-                    ) : null}
-
-                    <h3 className="text-base font-semibold text-gray-900 leading-snug">
-                      {post.title}
-                    </h3>
-                    <p className="text-sm text-gray-600 mt-2 leading-relaxed">
-                      {truncate(post.description, 140)}
-                    </p>
-
-                    {post.hashtags.length > 0 && (
-                      <div className="flex flex-wrap gap-2 mt-4">
-                        {post.hashtags.slice(0, 5).map((t) => (
-                          <span
-                            key={t}
-                            className="inline-flex px-2 py-1 rounded-full text-[11px] font-medium bg-leaf/15 text-forest border border-forest/10"
-                          >
-                            #{t}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-
-                    <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
-                      <span>
-                        By{" "}
-                        <span className="font-medium text-gray-700">
-                          {post.user.name ?? "Farmer"}
-                        </span>
-                      </span>
-                      <span className="flex items-center gap-3">
-                        <span title="Likes">♥ {post._count?.likes ?? 0}</span>
-                        <span title="Comments">💬 {post._count?.comments ?? 0}</span>
-                      </span>
-                    </div>
-                  </Card>
-                </Link>
+                <PostFeedCard key={post.id} post={post} />
               ))}
+            </div>
+            <div className="mt-6 flex flex-col items-center gap-3">
+              {loadingMore ? (
+                <div className="grid w-full grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                  {Array.from({ length: 3 }).map((_, idx) => (
+                    <PostCardSkeleton key={`skeleton-more-${idx}`} />
+                  ))}
+                </div>
+              ) : null}
+              {hasMore && !loadingMore ? (
+                <Button type="button" variant="secondary" onClick={() => void load(false)}>
+                  Load more
+                </Button>
+              ) : null}
+              {!hasMore && posts.length > 0 ? (
+                <div className="text-xs text-gray-400">You have reached the end.</div>
+              ) : null}
+              <div ref={loadMoreRef} className="h-1 w-full" aria-hidden />
             </div>
           </FadeIn>
         )}
       </Container>
     </main>
+  );
+}
+
+function PostFeedCard({ post }: { post: CommunityPost }) {
+  const engagement = usePostEngagement(post);
+
+  return (
+    <Link href={`/community/${post.id}`}>
+      <Card
+        hover
+        className="rounded-2xl border border-gray-100 p-5 h-full"
+      >
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${typeBadgeClass(post.type)}`}>
+            {post.type}
+          </span>
+          <span className="text-xs text-gray-400">
+            {post.category}
+          </span>
+        </div>
+
+        {post.type !== "TEXT" && post.mediaUrl ? (
+          <div className="mb-3 rounded-xl overflow-hidden border border-gray-100 bg-gray-50">
+            {post.type === "IMAGE" ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={post.mediaUrl}
+                alt={post.title}
+                className="w-full h-36 object-cover"
+              />
+            ) : (
+              <video
+                src={post.mediaUrl}
+                className="w-full h-36 object-cover bg-black/5"
+                muted
+                controls={false}
+              />
+            )}
+          </div>
+        ) : null}
+
+        <h3 className="text-base font-semibold text-gray-900 leading-snug">
+          {post.title}
+        </h3>
+        <p className="text-sm text-gray-600 mt-2 leading-relaxed">
+          {truncate(post.description, 140)}
+        </p>
+
+        {post.hashtags.length > 0 && (
+          <div className="flex flex-wrap gap-2 mt-4">
+            {post.hashtags.slice(0, 5).map((t) => (
+              <span
+                key={t}
+                className="inline-flex px-2 py-1 rounded-full text-[11px] font-medium bg-leaf/15 text-forest border border-forest/10"
+              >
+                #{t}
+              </span>
+            ))}
+          </div>
+        )}
+
+        <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between text-xs text-gray-500">
+          <span>
+            By{" "}
+            <span className="font-medium text-gray-700">
+              {post.user.name ?? "Farmer"}
+            </span>
+          </span>
+          <span className="flex items-center gap-3">
+            <span title="Likes">♥ {engagement.likes}</span>
+            <span title="Comments">💬 {engagement.comments}</span>
+          </span>
+        </div>
+      </Card>
+    </Link>
+  );
+}
+
+function PostCardSkeleton() {
+  return (
+    <Card className="rounded-2xl border border-gray-100 p-5 h-full animate-pulse">
+      <div className="flex items-start justify-between gap-3 mb-3">
+        <div className="h-6 w-16 rounded-full bg-gray-200" />
+        <div className="h-4 w-14 rounded bg-gray-100" />
+      </div>
+      <div className="mb-3 h-36 w-full rounded-xl bg-gray-100" />
+      <div className="h-5 w-3/4 rounded bg-gray-200" />
+      <div className="mt-2 h-4 w-full rounded bg-gray-100" />
+      <div className="mt-2 h-4 w-2/3 rounded bg-gray-100" />
+      <div className="mt-4 flex gap-2">
+        <div className="h-5 w-14 rounded-full bg-gray-100" />
+        <div className="h-5 w-16 rounded-full bg-gray-100" />
+      </div>
+      <div className="mt-4 pt-3 border-t border-gray-100 flex items-center justify-between">
+        <div className="h-4 w-24 rounded bg-gray-100" />
+        <div className="h-4 w-16 rounded bg-gray-100" />
+      </div>
+    </Card>
   );
 }
 

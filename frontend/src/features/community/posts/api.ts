@@ -8,9 +8,18 @@ type GetPostsParams = {
   skip?: number;
 };
 
+export type CommunityPostsMeta = {
+  count: number;
+  total: number;
+  take: number;
+  skip: number;
+  nextSkip: number | null;
+  hasMore: boolean;
+};
+
 export async function getPosts(params: GetPostsParams): Promise<{
   posts: CommunityPost[];
-  meta?: { count: number; take: number; skip: number };
+  meta?: CommunityPostsMeta;
 }> {
   const qs = new URLSearchParams();
   if (params.category) qs.set("category", params.category);
@@ -26,7 +35,7 @@ export async function getPosts(params: GetPostsParams): Promise<{
 
   const json = (await res.json()) as {
     posts: CommunityPost[];
-    meta?: { count: number; take: number; skip: number };
+    meta?: CommunityPostsMeta;
   };
 
   return json;
