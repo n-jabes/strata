@@ -14,7 +14,10 @@ model User {
   password  String
   createdAt DateTime @default(now())
 
-  farms Farm[]
+  farms        Farm[]
+  posts        Post[]
+  postLikes    PostLike[]
+  postComments PostComment[]
 }
 
 model Farm {
@@ -55,4 +58,70 @@ model Recommendation {
 
   analysisId String       @unique
   analysis   LandAnalysis @relation(fields: [analysisId], references: [id])
+}
+
+enum PostType {
+  TEXT
+  IMAGE
+  VIDEO
+}
+
+enum PostCategory {
+  TIP
+  GUIDE
+  QUESTION
+  EXPERIENCE
+}
+
+model Post {
+  id          String       @id @default(uuid())
+  title       String
+  description String
+  type        PostType
+  mediaUrl    String?
+  hashtags    String[]
+  category    PostCategory
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  comments PostComment[]
+  likes    PostLike[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([category, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+}
+
+model PostComment {
+  id        String   @id @default(uuid())
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+}
+
+model PostLike {
+  id        String   @id @default(uuid())
+  createdAt DateTime @default(now())
+
+  postId String
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, userId])
+  @@index([postId])
+  @@index([userId])
 }
