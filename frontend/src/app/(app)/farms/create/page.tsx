@@ -23,7 +23,7 @@ export default async function CreateFarmPage() {
           <div className="mb-8">
             <Link
               href="/farms"
-              className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-forest transition-colors mb-5"
+              className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-forest transition-colors mb-5 mr-4"
             >
               <FiArrowLeft size={14} />
               Back to Farms

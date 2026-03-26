@@ -1,10 +1,12 @@
 import { redirect } from "next/navigation";
 import {
-  FiMap,
-  FiLayers,
   FiArrowRight,
-  FiClock,
-  FiTrendingUp,
+  FiBarChart2,
+  FiCloudRain,
+  FiLayers,
+  FiMap,
+  FiPieChart,
+  FiTarget,
 } from "react-icons/fi";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -14,6 +16,18 @@ import { cn } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import type { ErosionRisk } from "@/features/land-analysis/types";
+import {
+  getCropFrequency,
+  getInsights,
+  getMostRecommendedCrop,
+  getRainfallDistribution,
+  getSlopeCategories,
+  getSoilDistribution,
+} from "@/lib/analytics";
+import { SoilChart } from "@/components/charts/SoilChart";
+import { RainfallChart } from "@/components/charts/RainfallChart";
+import { SlopeChart } from "@/components/charts/SlopeChart";
+import { CropChart } from "@/components/charts/CropChart";
 
 const EROSION_BADGE: Record<ErosionRisk, string> = {
   Low: "bg-green-100 text-green-700",
@@ -23,20 +37,26 @@ const EROSION_BADGE: Record<ErosionRisk, string> = {
 
 async function getDashboardData(userId: string) {
   try {
-    const [farmCount, analysisCount, soilGroups, recentAnalyses] =
+    const [farmCount, analysisCount, analyses, recentAnalyses] =
       await Promise.all([
         prisma.farm.count({ where: { userId } }),
         prisma.landAnalysis.count({ where: { farm: { userId } } }),
-        prisma.landAnalysis.groupBy({
-          by: ["soilType"],
+        prisma.landAnalysis.findMany({
           where: { farm: { userId } },
-          _count: { soilType: true },
-          orderBy: { _count: { soilType: "desc" } },
-          take: 1,
+          select: {
+            slope: true,
+            soilType: true,
+            rainfall: true,
+            recommendation: {
+              select: {
+                recommendedCrops: true,
+              },
+            },
+          },
         }),
         prisma.landAnalysis.findMany({
           where: { farm: { userId } },
-          take: 5,
+          take: 6,
           orderBy: { createdAt: "desc" },
           include: {
             farm: true,
@@ -51,14 +71,37 @@ async function getDashboardData(userId: string) {
         }),
       ]);
 
-    const topSoil = soilGroups[0]?.soilType ?? null;
+    const soilDistribution = getSoilDistribution(analyses);
+    const rainfallDistribution = getRainfallDistribution(analyses);
+    const slopeDistribution = getSlopeCategories(analyses);
+    const cropFrequency = getCropFrequency(analyses.map((a) => a.recommendation));
+    const topSoil = soilDistribution[0]?.name ?? null;
+    const topCrop = getMostRecommendedCrop(analyses.map((a) => a.recommendation));
+    const insights = getInsights(analyses).slice(0, 5);
 
-    return { farmCount, analysisCount, topSoil, recentAnalyses };
+    return {
+      farmCount,
+      analysisCount,
+      topSoil,
+      topCrop,
+      soilDistribution,
+      rainfallDistribution,
+      slopeDistribution,
+      cropFrequency,
+      insights,
+      recentAnalyses,
+    };
   } catch {
     return {
       farmCount: 0,
       analysisCount: 0,
       topSoil: null,
+      topCrop: null,
+      soilDistribution: [],
+      rainfallDistribution: [],
+      slopeDistribution: [],
+      cropFrequency: [],
+      insights: [],
       recentAnalyses: [],
     };
   }
@@ -68,77 +111,72 @@ export default async function DashboardPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
 
-  const { farmCount, analysisCount, topSoil, recentAnalyses } =
-    await getDashboardData(session.user.id);
+  const {
+    farmCount,
+    analysisCount,
+    topSoil,
+    topCrop,
+    soilDistribution,
+    rainfallDistribution,
+    slopeDistribution,
+    cropFrequency,
+    insights,
+    recentAnalyses,
+  } = await getDashboardData(session.user.id);
 
   const firstName = session.user.name?.split(" ")[0] ?? "Farmer";
+  const hasAnalytics = analysisCount > 0;
 
   const stats = [
     {
-      label: "Registered Farms",
+      label: "Total Farms",
       value: formatNumber(farmCount),
       icon: FiLayers,
       color: "bg-forest/10 text-forest",
     },
     {
-      label: "Land Analyses",
+      label: "Total Analyses",
       value: formatNumber(analysisCount),
-      icon: FiMap,
+      icon: FiBarChart2,
       color: "bg-leaf/10 text-leaf",
     },
     {
-      label: "Top Soil Type",
-      value: topSoil
-        ? topSoil.charAt(0).toUpperCase() + topSoil.slice(1)
-        : "—",
-      icon: FiTrendingUp,
-      color: "bg-soil/40 text-amber-700",
-    },
-  ];
-
-  const quickActions = [
-    {
-      label: "My Farms",
-      description: "View and manage your registered farms",
-      href: "/farms",
-      icon: FiLayers,
+      label: "Most Common Soil Type",
+      value: topSoil ?? "—",
+      icon: FiPieChart,
+      color: "bg-soil/50 text-amber-700",
     },
     {
-      label: "Analyze Land",
-      description: "Start a new land analysis session",
-      href: "/analyze-land",
-      icon: FiMap,
-    },
-    {
-      label: "Analysis History",
-      description: "Browse all past analyses",
-      href: "/analysis-history",
-      icon: FiClock,
+      label: "Most Recommended Crop",
+      value: topCrop ?? "—",
+      icon: FiTarget,
+      color: "bg-forest/15 text-forest-dark",
     },
   ];
 
   return (
-    <div className="p-4 sm:p-6 lg:p-8 max-w-5xl">
+    <div className="w-full p-4 sm:p-6 lg:p-8">
       <FadeIn>
         <header className="mb-6 sm:mb-8">
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
             Welcome back, {firstName}
           </h1>
           <p className="text-sm sm:text-base text-gray-500 mt-1">
-            Here&apos;s your STRATA agricultural overview.
+            Track patterns in your land data and recommendations.
           </p>
         </header>
       </FadeIn>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 mb-6 sm:mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 sm:gap-4 mb-6 sm:mb-8">
         {stats.map((stat, i) => (
-          <FadeIn key={stat.label} delay={i * 0.08}>
-            <Card>
+          <FadeIn key={stat.label} delay={i * 0.06}>
+            <Card
+              className="rounded-xl shadow-sm hover:shadow-md transition-all duration-200 hover:-translate-y-0.5 p-5"
+            >
               <div className="flex items-start justify-between">
                 <div>
                   <p className="text-sm text-gray-500 mb-1">{stat.label}</p>
-                  <p className="text-3xl font-bold text-gray-900">
+                  <p className="text-2xl font-bold text-gray-900 truncate">
                     {stat.value}
                   </p>
                 </div>
@@ -153,9 +191,73 @@ export default async function DashboardPage() {
         ))}
       </div>
 
-      {/* Recent Analyses */}
-      <FadeIn delay={0.25}>
-        <Card className="mb-4 sm:mb-6 overflow-hidden p-0">
+      {!hasAnalytics ? (
+        <FadeIn delay={0.2}>
+          <Card className="rounded-xl shadow-sm p-8 text-center">
+            <div className="w-14 h-14 rounded-full bg-forest/10 text-forest mx-auto flex items-center justify-center mb-4">
+              <FiMap size={24} />
+            </div>
+            <h2 className="text-lg font-semibold text-gray-900">No data available yet</h2>
+            <p className="text-sm text-gray-500 mt-2">
+              Start by analyzing your land to unlock dashboard analytics and insights.
+            </p>
+            <Link
+              href="/analyze-land"
+              className="inline-flex mt-5 items-center gap-2 px-4 py-2 rounded-lg bg-forest text-white hover:bg-forest/90 transition-colors text-sm font-semibold"
+            >
+              Analyze Land <FiArrowRight size={14} />
+            </Link>
+          </Card>
+        </FadeIn>
+      ) : (
+        <>
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 sm:gap-5 mb-6 sm:mb-8">
+            <FadeIn delay={0.22}>
+              <SoilChart data={soilDistribution} />
+            </FadeIn>
+            <FadeIn delay={0.25}>
+              <RainfallChart data={rainfallDistribution} />
+            </FadeIn>
+            <FadeIn delay={0.28}>
+              <SlopeChart data={slopeDistribution} />
+            </FadeIn>
+            <FadeIn delay={0.31}>
+              <CropChart data={cropFrequency} />
+            </FadeIn>
+          </div>
+
+          <FadeIn delay={0.34}>
+            <Card className="rounded-xl shadow-sm mb-6 sm:mb-8">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-lg bg-forest/10 text-forest flex items-center justify-center shrink-0">
+                  <FiCloudRain size={16} />
+                </div>
+                <div>
+                  <h2 className="text-base sm:text-lg font-semibold text-gray-900">Insights</h2>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    Highlights automatically generated from your data
+                  </p>
+                </div>
+              </div>
+
+              <ul className="mt-4 space-y-2.5">
+                {insights.slice(0, 5).map((insight) => (
+                  <li
+                    key={insight}
+                    className="text-sm text-gray-700 leading-relaxed flex gap-2"
+                  >
+                    <span className="text-leaf mt-[2px]">•</span>
+                    <span>{insight}</span>
+                  </li>
+                ))}
+              </ul>
+            </Card>
+          </FadeIn>
+        </>
+      )}
+
+      <FadeIn delay={0.36}>
+        <Card className="mb-4 sm:mb-6 overflow-hidden p-0 rounded-xl shadow-sm">
           <div className="px-4 sm:px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <div>
               <h2 className="text-base font-semibold text-gray-900">
@@ -255,33 +357,6 @@ export default async function DashboardPage() {
             </div>
           )}
         </Card>
-      </FadeIn>
-
-      {/* Quick Actions */}
-      <FadeIn delay={0.3}>
-        <h2 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">
-          Quick Actions
-        </h2>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-          {quickActions.map(({ label, description, href, icon: Icon }) => (
-            <Link key={href} href={href}>
-              <Card hover className="group h-full">
-                <div className="w-9 h-9 rounded-lg bg-forest/10 flex items-center justify-center mb-3 group-hover:bg-forest/20 transition-colors duration-200">
-                  <Icon size={16} className="text-forest" />
-                </div>
-                <p className="text-sm font-semibold text-gray-900 mb-1">
-                  {label}
-                </p>
-                <p className="text-xs text-gray-400 leading-relaxed">
-                  {description}
-                </p>
-                <div className="mt-3 flex items-center gap-1 text-xs font-medium text-forest opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-                  Go <FiArrowRight size={12} />
-                </div>
-              </Card>
-            </Link>
-          ))}
-        </div>
       </FadeIn>
     </div>
   );
