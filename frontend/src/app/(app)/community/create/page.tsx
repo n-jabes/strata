@@ -14,7 +14,9 @@ export const metadata: Metadata = {
 
 export default async function CreateCommunityPostPage() {
   const session = await auth();
-  if (!session?.user?.id) redirect("/login");
+  if (!session?.user?.id) {
+    redirect("/login?callbackUrl=/community/create");
+  }
 
   return (
     <main className="min-h-0 py-8 sm:py-10 lg:py-12 bg-transparent">

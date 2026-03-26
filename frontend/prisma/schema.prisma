@@ -8,16 +8,29 @@ datasource db {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  name      String
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
+  id              String             @id @default(uuid())
+  name            String
+  email           String             @unique
+  password        String
+  location        String?
+  bio             String?
+  profilePicture  String?
+  farmSize        Float?
+  soilType        String?
+  experienceLevel ExperienceLevel?
+  createdAt       DateTime           @default(now())
 
   farms        Farm[]
   posts        Post[]
   postLikes    PostLike[]
   postComments PostComment[]
+}
+
+enum ExperienceLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
 }
 
 model Farm {

@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { FadeIn } from "@/components/animations/fade-in";
 import { Container } from "@/components/ui/container";
 import { Card } from "@/components/ui/card";
@@ -43,6 +44,7 @@ function typeBadgeClass(type: CommunityPost["type"]) {
 export default function CommunityFeedPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { data: session } = useSession();
 
   const [category, setCategory] = useState<CommunityPostCategory | "">("");
   const [hashtags, setHashtags] = useState("");
@@ -192,9 +194,16 @@ export default function CommunityFeedPage() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-3 shrink-0">
-              <Link href="/community/create">
+              <Link
+                href={
+                  session?.user
+                    ? "/community/create"
+                    : "/login?callbackUrl=/community/create"
+                }
+              >
                 <Button className="justify-center">
-                  Create Post <FiArrowRight size={14} />
+                  {session?.user ? "Create Post" : "Login to Create"}
+                  <FiArrowRight size={14} />
                 </Button>
               </Link>
             </div>

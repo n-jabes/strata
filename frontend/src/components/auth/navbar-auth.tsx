@@ -9,6 +9,7 @@ import { ProfileDropdown } from "@/components/auth/profile-dropdown";
 import { cn } from "@/lib/utils";
 
 const PUBLIC_LINKS = [
+  { label: "Community", href: "/community" },
   { label: "Features", href: "/#features" },
   { label: "About", href: "/#about" },
 ];

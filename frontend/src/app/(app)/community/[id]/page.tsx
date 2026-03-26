@@ -78,6 +78,13 @@ export default function CommunityPostDetailPage() {
     return !!userId && userId === post.userId;
   }, [post, session]);
 
+  const isLoggedIn = !!session?.user;
+
+  function requireLogin() {
+    const callbackPath = postId ? `/community/${postId}` : "/community";
+    router.push(`/login?callbackUrl=${encodeURIComponent(callbackPath)}`);
+  }
+
   async function handleDelete() {
     if (!post) return;
     const ok = window.confirm("Delete this post? This cannot be undone.");
@@ -209,8 +216,13 @@ export default function CommunityPostDetailPage() {
                     </div>
                     <span className="text-sm text-gray-600">{post._count?.likes ?? 0}</span>
                   </div>
-                  <Button variant="ghost" disabled className="justify-center">
-                    Like (coming soon)
+                  <Button
+                    variant="ghost"
+                    disabled={isLoggedIn}
+                    onClick={requireLogin}
+                    className="justify-center"
+                  >
+                    {isLoggedIn ? "Like (coming soon)" : "Login to Like"}
                   </Button>
                 </Card>
                 <Card className="rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col gap-3">
@@ -221,8 +233,13 @@ export default function CommunityPostDetailPage() {
                     </div>
                     <span className="text-sm text-gray-600">{post._count?.comments ?? 0}</span>
                   </div>
-                  <Button variant="ghost" disabled className="justify-center">
-                    Comment (coming soon)
+                  <Button
+                    variant="ghost"
+                    disabled={isLoggedIn}
+                    onClick={requireLogin}
+                    className="justify-center"
+                  >
+                    {isLoggedIn ? "Comment (coming soon)" : "Login to Comment"}
                   </Button>
                 </Card>
                 <Card className="rounded-2xl shadow-sm border border-gray-100 p-5 flex flex-col gap-3">

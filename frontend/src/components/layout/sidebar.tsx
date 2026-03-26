@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
   LuLayoutDashboard,
+  LuUser,
   LuMap,
   LuMapPin,
   LuHistory,
@@ -27,6 +28,7 @@ type NavItem = {
 
 const sidebarItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LuLayoutDashboard },
+  { label: "Profile", href: "/profile", icon: LuUser },
   { label: "Farms", href: "/farms", icon: LuTractor },
   { label: "Analyze Land", href: "/analyze-land", icon: LuMap },
   { label: "Community", href: "/community", icon: LuMessageSquare, activePrefixes: ["/community"] },
@@ -80,6 +82,11 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const user = session?.user;
   const displayName = user?.name?.split(" ")[0] ?? "Farmer";
+  const isCommunityRoute = pathname.startsWith("/community");
+  const visibleSidebarItems =
+    !user && isCommunityRoute
+      ? sidebarItems.filter((item) => item.href === "/community")
+      : sidebarItems;
 
   return (
     <>
@@ -114,7 +121,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
         <div className="flex h-[3.75rem] items-center justify-between gap-2 px-5 border-b border-sidebar-border shrink-0">
           <Link
-            href="/dashboard"
+            href="/"
             onClick={() => onClose()}
             className="group min-w-0"
           >
@@ -140,7 +147,7 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
             Navigate
           </p>
           <ul className="space-y-1">
-            {sidebarItems.map(
+            {visibleSidebarItems.map(
               ({ label, href, icon: Icon, activePrefixes }) => {
                 const isActive = navIsActive(
                   pathname,
@@ -191,14 +198,16 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
               )}
             </div>
           )}
-          <button
-            type="button"
-            onClick={handleLogout}
-            className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/25 bg-red-500/[0.12] px-3 py-2.5 text-sm font-semibold text-red-200 hover:bg-red-500/20 hover:border-red-400/35 transition-colors"
-          >
-            <LuLogOut className="size-4 shrink-0" strokeWidth={2} />
-            Log out
-          </button>
+          {user && (
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex w-full items-center justify-center gap-2 rounded-xl border border-red-500/25 bg-red-500/[0.12] px-3 py-2.5 text-sm font-semibold text-red-200 hover:bg-red-500/20 hover:border-red-400/35 transition-colors"
+            >
+              <LuLogOut className="size-4 shrink-0" strokeWidth={2} />
+              Log out
+            </button>
+          )}
           <p className="text-center text-[0.65rem] text-white/30 leading-relaxed px-1">
             Smart terraced agriculture for Africa
           </p>

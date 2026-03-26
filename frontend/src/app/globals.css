@@ -33,6 +33,36 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Global revolutionary earthy scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #007e6e #221d17;
+}
+
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, #1a1612 0%, #2a241d 100%);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #73af6f 0%, #007e6e 55%, #005f53 100%);
+  border: 2px solid #1a1612;
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #d7c097 0%, #73af6f 45%, #007e6e 100%);
+}
+
+*::-webkit-scrollbar-corner {
+  background: #1a1612;
+}
+
 /* Pointer cursor on all interactive elements globally */
 a,
 button,
