@@ -49,6 +49,7 @@ export default function CommunityFeedPage() {
   const [category, setCategory] = useState<CommunityPostCategory | "">("");
   const [hashtags, setHashtags] = useState("");
   const [search, setSearch] = useState("");
+  const [sort, setSort] = useState<"NEWEST" | "TOP">("NEWEST");
 
   const [posts, setPosts] = useState<CommunityPost[]>([]);
   const [loading, setLoading] = useState(false);
@@ -70,6 +71,8 @@ export default function CommunityFeedPage() {
 
     setHashtags(searchParams.get("hashtags") ?? "");
     setSearch(searchParams.get("search") ?? "");
+    const rawSort = searchParams.get("sort");
+    setSort(rawSort === "TOP" ? "TOP" : "NEWEST");
 
     // Hydrate the initial page window from URL once.
     if (!didHydrateFromUrlRef.current) {
@@ -99,6 +102,7 @@ export default function CommunityFeedPage() {
     if (category) qs.set("category", category);
     if (hashtags) qs.set("hashtags", hashtags);
     if (search) qs.set("search", search);
+    if (sort === "TOP") qs.set("sort", sort);
     if (loadedCount > PAGE_SIZE) qs.set("loaded", String(loadedCount));
     const query = qs.toString();
     router.replace(query ? `/community?${query}` : "/community", { scroll: false });
@@ -118,6 +122,7 @@ export default function CommunityFeedPage() {
         category: category || undefined,
         hashtags: hashtags || undefined,
         search: search || undefined,
+        sort,
         take: reset ? initialTake : PAGE_SIZE,
         skip,
       });
@@ -157,7 +162,7 @@ export default function CommunityFeedPage() {
     setInitialLoadDone(false);
     void load(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [category, hashtags, search, initialTake]);
+  }, [category, hashtags, search, sort, initialTake]);
 
   useEffect(() => {
     if (!loadMoreRef.current || !hasMore || loading || loadingMore) return;
@@ -221,7 +226,7 @@ export default function CommunityFeedPage() {
                 {" "}posts
               </div>
             </div>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-4">
               <Select
                 id="category"
                 label="Category"
@@ -244,6 +249,16 @@ export default function CommunityFeedPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
+              <Select
+                id="sort"
+                label="Sort"
+                value={sort}
+                onChange={(v) => setSort(v === "TOP" ? "TOP" : "NEWEST")}
+                options={[
+                  { value: "NEWEST", label: "Newest" },
+                  { value: "TOP", label: "Top Appreciated" },
+                ]}
+              />
               <div className="flex items-end">
                 <Button
                   type="button"
@@ -254,6 +269,7 @@ export default function CommunityFeedPage() {
                     if (category) qs.set("category", category);
                     if (hashtags) qs.set("hashtags", hashtags);
                     if (search) qs.set("search", search);
+                    if (sort === "TOP") qs.set("sort", sort);
                     setInitialTake(PAGE_SIZE);
                     router.push(`/community?${qs.toString()}`);
                   }}
@@ -273,6 +289,7 @@ export default function CommunityFeedPage() {
                     setCategory("");
                     setHashtags("");
                     setSearch("");
+                    setSort("NEWEST");
                     setInitialTake(PAGE_SIZE);
                     router.push("/community");
                   }}
@@ -411,7 +428,7 @@ function PostFeedCard({ post }: { post: CommunityPost }) {
             </span>
           </span>
           <span className="flex items-center gap-3">
-            <span title="Likes">♥ {engagement.likes}</span>
+            <span title="Appreciates">♥ {engagement.likes}</span>
             <span title="Comments">💬 {engagement.comments}</span>
           </span>
         </div>

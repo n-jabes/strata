@@ -96,6 +96,7 @@ export const listPostsQuerySchema = z.object({
         : []
     ),
   search: z.string().trim().max(120).optional(),
+  sort: z.enum(["NEWEST", "TOP"]).optional(),
   take: z.coerce.number().int().min(1).max(50).optional().default(20),
   skip: z.coerce.number().int().min(0).max(1000).optional().default(0),
 });

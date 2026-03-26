@@ -120,8 +120,13 @@ model PostComment {
   userId String
   user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  parentCommentId String?
+  parentComment   PostComment? @relation("CommentReplies", fields: [parentCommentId], references: [id], onDelete: Cascade)
+  replies PostComment[] @relation("CommentReplies")
+
   @@index([postId, createdAt(sort: Desc)])
   @@index([userId, createdAt(sort: Desc)])
+  @@index([postId, parentCommentId, createdAt(sort: Desc)])
 }
 
 model PostLike {

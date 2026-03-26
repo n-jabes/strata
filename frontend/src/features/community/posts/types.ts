@@ -11,6 +11,17 @@ export type CommunityPostCounts = {
   likes: number;
 };
 
+export type CommunityPostComment = {
+  id: string;
+  content: string;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+  userId: string;
+  user: CommunityPostUser;
+  parentCommentId?: string | null;
+  replies?: CommunityPostComment[];
+};
+
 export type CommunityPost = {
   id: string;
   title: string;
@@ -22,6 +33,7 @@ export type CommunityPost = {
   userId: string;
   user: CommunityPostUser;
   _count?: CommunityPostCounts | null;
+  viewerHasAppreciated?: boolean;
   createdAt: string | Date;
   updatedAt: string | Date;
 };

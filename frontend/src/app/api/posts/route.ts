@@ -42,6 +42,7 @@ export async function GET(request: Request) {
     category: searchParams.get("category") ?? undefined,
     hashtags: searchParams.get("hashtags") ?? undefined,
     search: searchParams.get("search") ?? undefined,
+    sort: searchParams.get("sort") ?? undefined,
     take: searchParams.get("take") ?? undefined,
     skip: searchParams.get("skip") ?? undefined,
   });

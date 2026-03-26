@@ -42,8 +42,9 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ id: string }> }
 ) {
+  const session = await auth();
   const { id } = await context.params;
-  const post = await getPostById(id);
+  const post = await getPostById(id, session?.user?.id);
 
   if (!post) {
     return NextResponse.json({ error: "Post not found" }, { status: 404 });
