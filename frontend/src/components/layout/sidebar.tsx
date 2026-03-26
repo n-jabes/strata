@@ -10,6 +10,7 @@ import {
   LuMapPin,
   LuHistory,
   LuTractor,
+  LuMessageSquare,
   LuX,
   LuLogOut,
 } from "react-icons/lu";
@@ -28,6 +29,7 @@ const sidebarItems: NavItem[] = [
   { label: "Dashboard", href: "/dashboard", icon: LuLayoutDashboard },
   { label: "Farms", href: "/farms", icon: LuTractor },
   { label: "Analyze Land", href: "/analyze-land", icon: LuMap },
+  { label: "Community", href: "/community", icon: LuMessageSquare, activePrefixes: ["/community"] },
   { label: "Farm Map", href: "/farm-map", icon: LuMapPin },
   {
     label: "Analysis History",

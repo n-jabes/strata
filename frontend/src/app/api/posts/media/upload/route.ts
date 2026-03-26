@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import { uploadCommunityPostMedia } from "@/features/community/posts/media-upload";
 
+// Cloudinary upload uses Node Buffer/stream APIs.
+export const runtime = "nodejs";
+
 export async function POST(request: Request) {
   const session = await auth();
   if (!session?.user?.id) {
