@@ -26,6 +26,8 @@ model User {
   postLikes    PostLike[]
   postComments PostComment[]
   passwordResetTokens PasswordResetToken[]
+  roleChangesMade     RoleChangeAudit[] @relation("RoleAuditActor")
+  roleChangesReceived RoleChangeAudit[] @relation("RoleAuditTarget")
 }
 
 model PasswordResetToken {
@@ -40,6 +42,22 @@ model PasswordResetToken {
 
   @@index([userId, createdAt(sort: Desc)])
   @@index([expiresAt])
+}
+
+model RoleChangeAudit {
+  id          String   @id @default(uuid())
+  fromRole    UserRole
+  toRole      UserRole
+  createdAt   DateTime @default(now())
+
+  actorUserId String
+  actorUser   User     @relation("RoleAuditActor", fields: [actorUserId], references: [id], onDelete: Cascade)
+
+  targetUserId String
+  targetUser   User     @relation("RoleAuditTarget", fields: [targetUserId], references: [id], onDelete: Cascade)
+
+  @@index([actorUserId, createdAt(sort: Desc)])
+  @@index([targetUserId, createdAt(sort: Desc)])
 }
 
 enum UserRole {

@@ -3,8 +3,8 @@ import { Container } from "@/components/ui/container";
 import { FadeIn } from "@/components/animations/fade-in";
 import { auth } from "@/auth";
 import { hasPermission } from "@/lib/auth/rbac";
-import { listManagedUsers } from "@/lib/auth/role-management";
-import { AdminUsersManager } from "@/features/admin/users/AdminUsersManager";
+import { listManagedUsers, listRoleChangeAudits } from "@/lib/auth/role-management";
+import { AdminUsersConsoleTabs } from "@/features/admin/users/AdminUsersConsoleTabs";
 
 export default async function AdminUsersPage() {
   const session = await auth();
@@ -12,6 +12,7 @@ export default async function AdminUsersPage() {
   if (!hasPermission(session.user.role, "users.roles.manage")) redirect("/dashboard");
 
   const users = await listManagedUsers();
+  const audits = await listRoleChangeAudits(100);
 
   return (
     <main className="min-h-0 py-8 sm:py-10 lg:py-12 bg-transparent">
@@ -29,12 +30,16 @@ export default async function AdminUsersPage() {
         </FadeIn>
 
         <FadeIn delay={0.06}>
-          <AdminUsersManager
+          <AdminUsersConsoleTabs
+            currentUserId={session.user.id}
             initialUsers={users.map((u) => ({
               ...u,
               createdAt: u.createdAt.toISOString(),
             }))}
-            currentUserId={session.user.id}
+            audits={audits.map((audit) => ({
+              ...audit,
+              createdAt: audit.createdAt.toISOString(),
+            }))}
           />
         </FadeIn>
       </Container>

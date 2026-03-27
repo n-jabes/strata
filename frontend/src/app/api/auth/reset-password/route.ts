@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { resetPasswordWithToken } from "@/features/auth/password-reset";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
 const resetPasswordSchema = z
   .object({
@@ -14,6 +15,22 @@ const resetPasswordSchema = z
   });
 
 export async function POST(request: Request) {
+  const clientIp = getClientIp(request);
+  const perIp = checkRateLimit({
+    key: `reset-password:ip:${clientIp}`,
+    limit: 10,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!perIp.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(perIp.retryAfterSeconds) },
+      }
+    );
+  }
+
   const json = await request.json().catch(() => null);
   const parsed = resetPasswordSchema.safeParse(json);
 

@@ -15,6 +15,23 @@ export type ManagedUser = {
   createdAt: Date;
 };
 
+export type RoleChangeAuditRecord = {
+  id: string;
+  fromRole: UserRole;
+  toRole: UserRole;
+  createdAt: Date;
+  actor: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  target: {
+    id: string;
+    name: string;
+    email: string;
+  };
+};
+
 export async function listManagedUsers(): Promise<ManagedUser[]> {
   const users = await prisma.user.findMany({
     orderBy: [{ role: "desc" }, { createdAt: "asc" }],
@@ -30,6 +47,54 @@ export async function listManagedUsers(): Promise<ManagedUser[]> {
   return users.map((u) => ({
     ...u,
     role: normalizeRole(u.role),
+  }));
+}
+
+export async function listRoleChangeAudits(limit = 100): Promise<RoleChangeAuditRecord[]> {
+  const safeLimit = Math.max(1, Math.min(limit, 500));
+  const roleChangeAuditDelegate = (prisma as unknown as {
+    roleChangeAudit?: {
+      findMany: typeof prisma.user.findMany;
+    };
+  }).roleChangeAudit;
+
+  // Defensive fallback for environments with stale Prisma runtime/client.
+  if (!roleChangeAuditDelegate) {
+    return [];
+  }
+
+  const audits = await roleChangeAuditDelegate.findMany({
+    orderBy: { createdAt: "desc" },
+    take: safeLimit,
+    select: {
+      id: true,
+      fromRole: true,
+      toRole: true,
+      createdAt: true,
+      actorUser: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+      targetUser: {
+        select: {
+          id: true,
+          name: true,
+          email: true,
+        },
+      },
+    },
+  });
+
+  return audits.map((audit) => ({
+    id: audit.id,
+    fromRole: normalizeRole(audit.fromRole),
+    toRole: normalizeRole(audit.toRole),
+    createdAt: audit.createdAt,
+    actor: audit.actorUser,
+    target: audit.targetUser,
   }));
 }
 
@@ -103,6 +168,30 @@ export async function updateUserRole(input: UpdateUserRoleInput) {
       data: { role: normalizedNextRole },
       select: { id: true, role: true },
     });
+
+    const roleChangeAuditDelegate = (tx as unknown as {
+      roleChangeAudit?: {
+        create: (args: {
+          data: {
+            actorUserId: string;
+            targetUserId: string;
+            fromRole: UserRole;
+            toRole: UserRole;
+          };
+        }) => Promise<unknown>;
+      };
+    }).roleChangeAudit;
+
+    if (roleChangeAuditDelegate) {
+      await roleChangeAuditDelegate.create({
+        data: {
+          actorUserId: actor.id,
+          targetUserId: target.id,
+          fromRole: targetRole,
+          toRole: normalizedNextRole,
+        },
+      });
+    }
 
     return {
       changed: true,

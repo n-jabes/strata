@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createPasswordResetToken } from "@/features/auth/password-reset";
+import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
 const forgotPasswordSchema = z.object({
   email: z.string().trim().email(),
@@ -14,16 +15,49 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
   }
 
-  const token = await createPasswordResetToken(parsed.data.email);
+  const clientIp = getClientIp(request);
+  const normalizedEmail = parsed.data.email.toLowerCase().trim();
+  const perIp = checkRateLimit({
+    key: `forgot-password:ip:${clientIp}`,
+    limit: 8,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!perIp.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(perIp.retryAfterSeconds) },
+      }
+    );
+  }
 
-  // In production, this should be emailed to user.
+  const perEmail = checkRateLimit({
+    key: `forgot-password:email:${normalizedEmail}`,
+    limit: 5,
+    windowMs: 10 * 60 * 1000,
+  });
+  if (!perEmail.allowed) {
+    return NextResponse.json(
+      { error: "Too many requests. Please try again later." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(perEmail.retryAfterSeconds) },
+      }
+    );
+  }
+
+  const token = await createPasswordResetToken(normalizedEmail);
+
   const origin = new URL(request.url).origin;
   const resetUrl = token ? `${origin}/reset-password?token=${token}` : null;
+  const shouldExposeResetUrl =
+    process.env.NODE_ENV !== "production" &&
+    process.env.EXPOSE_RESET_LINKS === "true";
 
   return NextResponse.json({
     message:
       "If an account exists for that email, a password reset link has been generated.",
-    resetUrl:
-      process.env.NODE_ENV === "development" ? resetUrl : undefined,
+    resetUrl: shouldExposeResetUrl ? resetUrl : undefined,
   });
 }
