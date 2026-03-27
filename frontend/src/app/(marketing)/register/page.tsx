@@ -76,13 +76,20 @@ export default function RegisterPage() {
     setIsLoading(true);
 
     try {
-      await registerUser({ name: name.trim(), email: email.trim().toLowerCase(), password });
+      const result = await registerUser({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      if (!result.ok) {
+        toast(result.error, "error");
+        return;
+      }
+
       toast("Account created successfully! Please sign in.", "success");
       router.push("/login");
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : "Registration failed. Please try again.";
-      toast(message, "error");
+    } catch {
+      toast("Registration failed. Please try again.", "error");
     } finally {
       setIsLoading(false);
     }
