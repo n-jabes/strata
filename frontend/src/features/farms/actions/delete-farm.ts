@@ -27,7 +27,23 @@ export async function deleteFarmAction(farmId: string) {
     throw new Error("Forbidden");
   }
 
-  await prisma.farm.delete({ where: { id: farmId } });
+  // Farm has dependent analyses (and recommendations attached to analyses).
+  // Delete dependents in one transaction to satisfy RESTRICT foreign keys.
+  await prisma.$transaction(async (tx) => {
+    await tx.recommendation.deleteMany({
+      where: {
+        analysis: {
+          farmId,
+        },
+      },
+    });
+
+    await tx.landAnalysis.deleteMany({
+      where: { farmId },
+    });
+
+    await tx.farm.delete({ where: { id: farmId } });
+  });
 
   revalidatePath("/farms");
   revalidatePath("/dashboard");

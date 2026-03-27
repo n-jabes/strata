@@ -12,6 +12,7 @@ import { Container } from "@/components/ui/container";
 import { Card } from "@/components/ui/card";
 import { FadeIn } from "@/components/animations/fade-in";
 import { FarmAnalysisTable } from "@/components/farms/farm-analysis-table";
+import { DeleteFarmButton } from "@/components/farms/delete-farm-button";
 import { auth } from "@/auth";
 import { getFarmById } from "@/lib/db/farms";
 import { deleteFarmAction } from "@/features/farms/actions/delete-farm";
@@ -102,20 +103,13 @@ export default async function FarmDetailPage({
                 Analyze New Land
               </Link>
               {canDeleteFarm ? (
-                <form
-                  action={async () => {
+                <DeleteFarmButton
+                  deleteAction={async () => {
                     "use server";
                     await deleteFarmAction(farm.id);
                     redirect("/farms");
                   }}
-                >
-                  <button
-                    type="submit"
-                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-700 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors"
-                  >
-                    Delete Farm
-                  </button>
-                </form>
+                />
               ) : null}
             </div>
           </div>
