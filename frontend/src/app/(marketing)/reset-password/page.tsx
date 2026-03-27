@@ -1,12 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { Suspense, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { FiEye, FiEyeOff, FiLoader, FiLock } from "react-icons/fi";
 import { useToast } from "@/components/ui/toast";
 
-export default function ResetPasswordPage() {
+function ResetPasswordInner() {
   const { toast } = useToast();
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -184,5 +184,13 @@ export default function ResetPasswordPage() {
         </Link>
       </div>
     </div>
+  );
+}
+
+export default function ResetPasswordPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <ResetPasswordInner />
+    </Suspense>
   );
 }

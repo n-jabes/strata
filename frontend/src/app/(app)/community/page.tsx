@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useSession } from "next-auth/react";
@@ -41,7 +41,7 @@ function typeBadgeClass(type: CommunityPost["type"]) {
   }
 }
 
-export default function CommunityFeedPage() {
+function CommunityFeedInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
@@ -359,6 +359,14 @@ export default function CommunityFeedPage() {
         )}
       </Container>
     </main>
+  );
+}
+
+export default function CommunityFeedPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen" />}>
+      <CommunityFeedInner />
+    </Suspense>
   );
 }
 

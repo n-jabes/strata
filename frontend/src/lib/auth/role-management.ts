@@ -52,11 +52,10 @@ export async function listManagedUsers(): Promise<ManagedUser[]> {
 
 export async function listRoleChangeAudits(limit = 100): Promise<RoleChangeAuditRecord[]> {
   const safeLimit = Math.max(1, Math.min(limit, 500));
-  const roleChangeAuditDelegate = (prisma as unknown as {
-    roleChangeAudit?: {
-      findMany: typeof prisma.user.findMany;
-    };
-  }).roleChangeAudit;
+  const roleChangeAuditDelegate = (prisma as unknown as { roleChangeAudit?: any })
+    .roleChangeAudit as
+    | { findMany: (args: any) => Promise<any[]> }
+    | undefined;
 
   // Defensive fallback for environments with stale Prisma runtime/client.
   if (!roleChangeAuditDelegate) {
@@ -169,20 +168,10 @@ export async function updateUserRole(input: UpdateUserRoleInput) {
       select: { id: true, role: true },
     });
 
-    const roleChangeAuditDelegate = (tx as unknown as {
-      roleChangeAudit?: {
-        create: (args: {
-          data: {
-            actorUserId: string;
-            targetUserId: string;
-            fromRole: UserRole;
-            toRole: UserRole;
-          };
-        }) => Promise<unknown>;
-      };
-    }).roleChangeAudit;
+    const roleChangeAuditDelegate = (tx as unknown as { roleChangeAudit?: any })
+      .roleChangeAudit as { create?: (args: any) => Promise<unknown> } | undefined;
 
-    if (roleChangeAuditDelegate) {
+    if (roleChangeAuditDelegate?.create) {
       await roleChangeAuditDelegate.create({
         data: {
           actorUserId: actor.id,

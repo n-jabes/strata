@@ -27,11 +27,16 @@ function parseHashtagsInput(raw: string): string[] {
   return Array.from(new Set(parts)).slice(0, 20);
 }
 
-function getFieldError(error: ZodError<unknown>) {
-  const flattened = error.flatten();
+function getFieldError(error: unknown) {
+  const flattened = (error as { flatten?: () => { fieldErrors: unknown } })
+    .flatten?.();
+  const fieldErrors = (flattened?.fieldErrors ?? {}) as Record<string, unknown>;
   const next: FieldErrors = {};
-  for (const [field, messages] of Object.entries(flattened.fieldErrors)) {
-    if (messages && messages.length > 0) next[field] = messages[0] as string;
+  for (const [field, messages] of Object.entries(fieldErrors)) {
+    const messageList = messages as unknown as string[] | undefined;
+    if (messageList && messageList.length > 0) {
+      next[field] = messageList[0];
+    }
   }
   return next;
 }

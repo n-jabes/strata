@@ -1,4 +1,10 @@
-import type { CommunityPostCategory, CommunityPostType } from "@/lib/community-posts";
+import type {
+  CommunityPostCategory,
+  CommunityPostType,
+} from "@/lib/community-posts";
+
+// Re-export so local API client can import category from this module.
+export type { CommunityPostCategory };
 
 export type CommunityPostUser = {
   id: string;
