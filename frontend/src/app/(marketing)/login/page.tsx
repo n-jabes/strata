@@ -125,6 +125,14 @@ function LoginForm() {
                   {showPassword ? <FiEyeOff size={16} /> : <FiEye size={16} />}
                 </button>
               </div>
+              <div className="mt-2 text-right">
+                <Link
+                  href="/forgot-password"
+                  className="text-xs font-medium text-forest hover:underline"
+                >
+                  Forgot password?
+                </Link>
+              </div>
             </div>
 
             {/* Submit */}
