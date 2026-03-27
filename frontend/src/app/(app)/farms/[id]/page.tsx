@@ -14,6 +14,8 @@ import { FadeIn } from "@/components/animations/fade-in";
 import { FarmAnalysisTable } from "@/components/farms/farm-analysis-table";
 import { auth } from "@/auth";
 import { getFarmById } from "@/lib/db/farms";
+import { deleteFarmAction } from "@/features/farms/actions/delete-farm";
+import { hasPermission, isAdminRole } from "@/lib/auth/rbac";
 
 export const metadata: Metadata = {
   title: "Farm Details — STRATA",
@@ -26,10 +28,14 @@ export default async function FarmDetailPage({
 }) {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
+  const canDeleteAny = hasPermission(session.user.role, "farms.delete.any");
+  const canDeleteOwn = hasPermission(session.user.role, "farms.delete.own");
+  const isAdmin = isAdminRole(session.user.role);
 
   const { id } = await params;
-  const farm = await getFarmById(id, session.user.id);
+  const farm = await getFarmById(id, session.user.id, session.user.role);
   if (!farm) notFound();
+  const canDeleteFarm = canDeleteAny || (canDeleteOwn && farm.userId === session.user.id);
 
   const createdDate = farm.createdAt.toLocaleDateString("en-US", {
     year: "numeric",
@@ -81,14 +87,37 @@ export default async function FarmDetailPage({
                 {farm.analyses.length} land{" "}
                 {farm.analyses.length === 1 ? "analysis" : "analyses"}
               </p>
+              {isAdmin && farm.user ? (
+                <p className="text-xs text-gray-400 mt-1">
+                  Owner: {farm.user.name ?? "Farmer"} ({farm.user.email})
+                </p>
+              ) : null}
             </div>
-            <Link
-              href={`/analyze-land?farmId=${farm.id}`}
-              className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-forest rounded-lg hover:bg-forest/90 transition-colors"
-            >
-              <FiMap size={14} />
-              Analyze New Land
-            </Link>
+            <div className="flex items-center gap-2">
+              <Link
+                href={`/analyze-land?farmId=${farm.id}`}
+                className="shrink-0 inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-white bg-forest rounded-lg hover:bg-forest/90 transition-colors"
+              >
+                <FiMap size={14} />
+                Analyze New Land
+              </Link>
+              {canDeleteFarm ? (
+                <form
+                  action={async () => {
+                    "use server";
+                    await deleteFarmAction(farm.id);
+                    redirect("/farms");
+                  }}
+                >
+                  <button
+                    type="submit"
+                    className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-medium text-red-700 bg-red-50 border border-red-100 rounded-lg hover:bg-red-100 transition-colors"
+                  >
+                    Delete Farm
+                  </button>
+                </form>
+              ) : null}
+            </div>
           </div>
         </FadeIn>
 

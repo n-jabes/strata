@@ -137,10 +137,16 @@ export default function CommunityPostDetailPage() {
     if (!post) return false;
     const user = session?.user as Record<string, unknown> | null | undefined;
     const userId = typeof user?.id === "string" ? user.id : undefined;
-    return !!userId && userId === post.userId;
+    const role = typeof user?.role === "string" ? user.role : null;
+    return !!userId && (userId === post.userId || role === "ADMIN" || role === "SUPER_ADMIN");
   }, [post, session]);
 
   const isLoggedIn = !!session?.user;
+  const isAdmin =
+    typeof (session?.user as Record<string, unknown> | null | undefined)?.role ===
+      "string" &&
+    ((session?.user as Record<string, unknown>).role === "ADMIN" ||
+      (session?.user as Record<string, unknown>).role === "SUPER_ADMIN");
   const viewerUserId: string | undefined =
     typeof (session?.user as Record<string, unknown> | null | undefined)?.id ===
     "string"
@@ -156,6 +162,10 @@ export default function CommunityPostDetailPage() {
     if (viewerUserId) return comment.userId === viewerUserId;
     if (viewerEmail && comment.user.email) return comment.user.email === viewerEmail;
     return false;
+  }
+
+  function canDeleteComment(comment: CommunityPostComment) {
+    return isAdmin || isCommentOwned(comment);
   }
 
   function requireLogin() {
@@ -478,7 +488,7 @@ export default function CommunityPostDetailPage() {
   async function handleRequestDeleteComment(commentId: string) {
     const existing = findCommentInTree(comments, commentId);
     if (!existing) return;
-    if (!isCommentOwned(existing)) return;
+    if (!canDeleteComment(existing)) return;
     setDeleteCommentId(commentId);
     setShowDeleteCommentModal(true);
   }
@@ -493,7 +503,7 @@ export default function CommunityPostDetailPage() {
 
     const target = findCommentInTree(comments, commentId);
     if (!target) return;
-    if (!isCommentOwned(target)) return;
+    if (!canDeleteComment(target)) return;
 
     setDeletingComment(true);
     setShowDeleteCommentModal(false);
@@ -743,16 +753,18 @@ export default function CommunityPostDetailPage() {
                             <p className="text-xs text-gray-400">
                               {formatDateTime(comment.createdAt)}
                             </p>
-                            {isCommentOwned(comment) ? (
+                            {isCommentOwned(comment) || canDeleteComment(comment) ? (
                               <div className="flex items-center gap-1">
-                                <Button
-                                  type="button"
-                                  variant="ghost"
-                                  onClick={() => void handleStartEdit(comment.id)}
-                                  className="h-8 w-8 !px-0 !py-0 p-0 justify-center rounded-lg border border-forest/20 bg-leaf/10 text-forest hover:bg-leaf/20"
-                                >
-                                  <FiEdit2 size={16} />
-                                </Button>
+                                {isCommentOwned(comment) ? (
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    onClick={() => void handleStartEdit(comment.id)}
+                                    className="h-8 w-8 !px-0 !py-0 p-0 justify-center rounded-lg border border-forest/20 bg-leaf/10 text-forest hover:bg-leaf/20"
+                                  >
+                                    <FiEdit2 size={16} />
+                                  </Button>
+                                ) : null}
                                 <Button
                                   type="button"
                                   variant="ghost"
@@ -887,18 +899,20 @@ export default function CommunityPostDetailPage() {
                                     <p className="text-xs text-gray-400">
                                       {formatDateTime(reply.createdAt)}
                                     </p>
-                                    {isCommentOwned(reply) ? (
+                                    {isCommentOwned(reply) || canDeleteComment(reply) ? (
                                       <div className="flex items-center gap-1">
-                                        <Button
-                                          type="button"
-                                          variant="ghost"
-                                          onClick={() =>
-                                            void handleStartEdit(reply.id)
-                                          }
-                                          className="h-8 w-8 !px-0 !py-0 p-0 justify-center rounded-lg border border-forest/20 bg-leaf/10 text-forest hover:bg-leaf/20"
-                                        >
-                                          <FiEdit2 size={16} />
-                                        </Button>
+                                        {isCommentOwned(reply) ? (
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            onClick={() =>
+                                              void handleStartEdit(reply.id)
+                                            }
+                                            className="h-8 w-8 !px-0 !py-0 p-0 justify-center rounded-lg border border-forest/20 bg-leaf/10 text-forest hover:bg-leaf/20"
+                                          >
+                                            <FiEdit2 size={16} />
+                                          </Button>
+                                        ) : null}
                                         <Button
                                           type="button"
                                           variant="ghost"

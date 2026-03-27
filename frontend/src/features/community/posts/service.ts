@@ -271,7 +271,8 @@ export async function editPostComment(
   postId: string,
   commentId: string,
   userId: string,
-  content: string
+  content: string,
+  isAdmin = false
 ) {
   const existing = await prisma.postComment.findUnique({
     where: { id: commentId },
@@ -282,7 +283,7 @@ export async function editPostComment(
     throw new Error("COMMENT_NOT_FOUND");
   }
 
-  if (existing.postId !== postId || existing.userId !== userId) {
+  if (existing.postId !== postId || (existing.userId !== userId && !isAdmin)) {
     throw new Error("FORBIDDEN");
   }
 
@@ -309,7 +310,8 @@ export async function editPostComment(
 export async function deletePostComment(
   postId: string,
   commentId: string,
-  userId: string
+  userId: string,
+  isAdmin = false
 ) {
   const existing = await prisma.postComment.findUnique({
     where: { id: commentId },
@@ -320,7 +322,7 @@ export async function deletePostComment(
     throw new Error("COMMENT_NOT_FOUND");
   }
 
-  if (existing.postId !== postId || existing.userId !== userId) {
+  if (existing.postId !== postId || (existing.userId !== userId && !isAdmin)) {
     throw new Error("FORBIDDEN");
   }
 

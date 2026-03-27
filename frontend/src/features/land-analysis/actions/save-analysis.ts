@@ -2,6 +2,7 @@
 
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { hasPermission } from "@/lib/auth/rbac";
 import { generateRecommendation } from "../logic/generate-recommendation";
 import type { AnalysisInput } from "../types";
 
@@ -16,10 +17,11 @@ export async function saveAnalysis(
   if (!session?.user?.id) {
     throw new Error("You must be signed in to save an analysis.");
   }
+  const canUseAnyFarm = hasPermission(session.user.role, "farms.read.any");
 
-  // Verify the farm belongs to the logged-in user
+  // Verify the farm belongs to the logged-in user unless admin can act across users.
   const farm = await prisma.farm.findFirst({
-    where: { id: input.farmId, userId: session.user.id },
+    where: canUseAnyFarm ? { id: input.farmId } : { id: input.farmId, userId: session.user.id },
     select: { id: true },
   });
   if (!farm) {

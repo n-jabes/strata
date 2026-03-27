@@ -7,6 +7,7 @@ import { FadeIn } from "@/components/animations/fade-in";
 import { FarmCard, FarmCardEmpty } from "@/components/farms/farm-card";
 import { auth } from "@/auth";
 import { getUserFarmsWithCount } from "@/lib/db/farms";
+import { isAdminRole } from "@/lib/auth/rbac";
 
 export const metadata: Metadata = {
   title: "My Farms — STRATA",
@@ -16,8 +17,9 @@ export const metadata: Metadata = {
 export default async function FarmsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
+  const isAdmin = isAdminRole(session.user.role);
 
-  const farms = await getUserFarmsWithCount(session.user.id);
+  const farms = await getUserFarmsWithCount(session.user.id, session.user.role);
 
   return (
     <main className="min-h-0 py-8 sm:py-10 lg:py-12 bg-transparent">
@@ -30,7 +32,7 @@ export default async function FarmsPage() {
                 Farm Management
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                My Farms
+                {isAdmin ? "All Farms" : "My Farms"}
               </h1>
               <p className="text-sm sm:text-base text-gray-500 mt-1">
                 {farms.length > 0

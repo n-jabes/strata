@@ -21,7 +21,7 @@ export default async function AnalyzeLandPage({
   if (!session?.user?.id) redirect("/login");
 
   const { farmId } = await searchParams;
-  const farms = await getUserFarmsAsOptions(session.user.id);
+  const farms = await getUserFarmsAsOptions(session.user.id, session.user.role);
 
   return (
     <main className="min-h-0 bg-transparent overflow-x-hidden">

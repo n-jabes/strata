@@ -31,6 +31,11 @@ export function FarmCard({ farm }: FarmCardProps) {
             <FiMapPin size={11} className="shrink-0" />
             <span className="truncate">{farm.location}</span>
           </div>
+          {farm.user ? (
+            <p className="mt-1 text-[11px] text-gray-400 truncate">
+              Owner: {farm.user.name ?? farm.user.email}
+            </p>
+          ) : null}
         </div>
         <div className="shrink-0 w-9 h-9 rounded-xl bg-forest/10 flex items-center justify-center">
           <FiLayers size={16} className="text-forest" />

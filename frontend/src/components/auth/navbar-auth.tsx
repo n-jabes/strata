@@ -75,7 +75,7 @@ export function NavbarAuth() {
 
             {user ? (
               <li className="ml-2">
-                <ProfileDropdown name={user.name} email={user.email} />
+                <ProfileDropdown name={user.name} email={user.email} role={user.role} />
               </li>
             ) : (
               <>
@@ -135,7 +135,7 @@ export function NavbarAuth() {
 
               {user ? (
                 <div className="pt-2 mt-1 border-t border-gray-100">
-                  <ProfileDropdown name={user.name} email={user.email} />
+                  <ProfileDropdown name={user.name} email={user.email} role={user.role} />
                 </div>
               ) : (
                 <div className="flex flex-col gap-2 pt-2 mt-1 border-t border-gray-100">

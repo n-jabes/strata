@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/prisma";
+import { hasPermission } from "@/lib/auth/rbac";
 
 export type CreateFarmInput = {
   name: string;
@@ -23,6 +24,9 @@ export async function createFarm(
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/login");
+  }
+  if (!hasPermission(session.user.role, "farms.create")) {
+    return { success: false, error: "You do not have permission to create farms." };
   }
 
   const name = input.name.trim();

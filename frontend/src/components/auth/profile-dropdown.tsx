@@ -3,11 +3,12 @@
 import { useState, useRef, useEffect } from "react";
 import { signOut } from "next-auth/react";
 import Link from "next/link";
-import { FiHome, FiMap, FiLogOut, FiUser } from "react-icons/fi";
+import { FiHome, FiMap, FiLogOut, FiUser, FiShield } from "react-icons/fi";
 
 interface ProfileDropdownProps {
   name: string | null | undefined;
   email: string | null | undefined;
+  role?: string | null | undefined;
 }
 
 function getInitials(name: string | null | undefined): string {
@@ -20,7 +21,7 @@ function getInitials(name: string | null | undefined): string {
     .toUpperCase();
 }
 
-export function ProfileDropdown({ name, email }: ProfileDropdownProps) {
+export function ProfileDropdown({ name, email, role }: ProfileDropdownProps) {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
@@ -90,6 +91,16 @@ export function ProfileDropdown({ name, email }: ProfileDropdownProps) {
               <FiMap size={14} />
               Analyze Land
             </Link>
+            {role === "SUPER_ADMIN" ? (
+              <Link
+                href="/admin/users"
+                onClick={() => { setOpen(false); }}
+                className="flex items-center gap-2.5 px-4 py-2 text-sm text-gray-700 hover:bg-forest/5 hover:text-forest transition-colors"
+              >
+                <FiShield size={14} />
+                Admin Console
+              </Link>
+            ) : null}
           </div>
 
           {/* Logout */}

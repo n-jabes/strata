@@ -14,6 +14,7 @@ import {
   LuMessageSquare,
   LuX,
   LuLogOut,
+  LuShield,
 } from "react-icons/lu";
 import { APP_NAME } from "@/lib/constants";
 import { cn } from "@/lib/utils";
@@ -38,6 +39,10 @@ const sidebarItems: NavItem[] = [
     icon: LuHistory,
     activePrefixes: ["/analysis-result"],
   },
+];
+
+const adminSidebarItems: NavItem[] = [
+  { label: "Admin Console", href: "/admin/users", icon: LuShield },
 ];
 
 function navIsActive(
@@ -81,10 +86,13 @@ export function Sidebar({ isOpen, onClose }: SidebarProps) {
 
   const user = session?.user;
   const displayName = user?.name?.split(" ")[0] ?? "Farmer";
+  const isSuperAdmin = user?.role === "SUPER_ADMIN";
   const isCommunityRoute = pathname.startsWith("/community");
   const visibleSidebarItems =
     !user && isCommunityRoute
       ? sidebarItems.filter((item) => item.href === "/community")
+      : isSuperAdmin
+      ? [...sidebarItems, ...adminSidebarItems]
       : sidebarItems;
 
   return (

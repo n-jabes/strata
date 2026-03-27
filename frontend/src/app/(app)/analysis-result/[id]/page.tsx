@@ -16,6 +16,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
 import type { ErosionRisk } from "@/features/land-analysis/types";
+import { hasPermission } from "@/lib/auth/rbac";
 
 export const metadata: Metadata = {
   title: "Analysis Result — STRATA",
@@ -36,11 +37,12 @@ export default async function AnalysisResultPage({
   if (!session?.user?.id) redirect("/login");
 
   const { id } = await params;
+  const canReadAny = hasPermission(session.user.role, "analyses.read.any");
 
   let analysis;
   try {
     analysis = await prisma.landAnalysis.findFirst({
-      where: { id, farm: { userId: session.user.id } },
+      where: canReadAny ? { id } : { id, farm: { userId: session.user.id } },
       include: {
         recommendation: true,
         farm: true,

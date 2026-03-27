@@ -12,6 +12,7 @@ model User {
   name            String
   email           String             @unique
   password        String
+  role            UserRole           @default(FARMER)
   location        String?
   bio             String?
   profilePicture  String?
@@ -24,6 +25,12 @@ model User {
   posts        Post[]
   postLikes    PostLike[]
   postComments PostComment[]
+}
+
+enum UserRole {
+  FARMER
+  ADMIN
+  SUPER_ADMIN
 }
 
 enum ExperienceLevel {

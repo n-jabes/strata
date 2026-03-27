@@ -25,8 +25,6 @@ export default async function ProfilePage() {
     location: profile.location ?? "",
     bio: profile.bio ?? "",
     profilePicture: profile.profilePicture ?? "",
-    farmSize: profile.farmSize?.toString() ?? "",
-    soilType: profile.soilType ?? "",
     experienceLevel: profile.experienceLevel ?? "",
   };
 
@@ -56,6 +54,9 @@ export default async function ProfilePage() {
                     {profile.name ?? "Your Profile"}
                   </h1>
                   <p className="mt-1 text-sm text-[#6d5b43]">{profile.email}</p>
+                  <p className="mt-2 inline-flex rounded-full border border-[#1a1612]/10 bg-[#fbf7e9] px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-[#3a2f22]">
+                    Role: {session.user.role.replace("_", " ")}
+                  </p>
                 </div>
               </div>
 
@@ -112,6 +113,10 @@ export default async function ProfilePage() {
                 <p>
                   <span className="font-medium text-[#2e271f]">Email:</span>{" "}
                   {profile.email}
+                </p>
+                <p>
+                  <span className="font-medium text-[#2e271f]">Role:</span>{" "}
+                  {session.user.role.replace("_", " ")}
                 </p>
                 <p>
                   <span className="font-medium text-[#2e271f]">Experience:</span>{" "}

@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import type { ErosionRisk } from "@/features/land-analysis/types";
+import { hasPermission } from "@/lib/auth/rbac";
 import {
   getCropFrequency,
   getInsights,
@@ -35,14 +36,18 @@ const EROSION_BADGE: Record<ErosionRisk, string> = {
   High: "bg-red-100 text-red-700",
 };
 
-async function getDashboardData(userId: string) {
+async function getDashboardData(userId: string, role?: string) {
+  const canReadAnyFarms = hasPermission(role, "farms.read.any");
+  const canReadAnyAnalyses = hasPermission(role, "analyses.read.any");
   try {
     const [farmCount, analysisCount, analyses, recentAnalyses] =
       await Promise.all([
-        prisma.farm.count({ where: { userId } }),
-        prisma.landAnalysis.count({ where: { farm: { userId } } }),
+        prisma.farm.count({ where: canReadAnyFarms ? undefined : { userId } }),
+        prisma.landAnalysis.count({
+          where: canReadAnyAnalyses ? undefined : { farm: { userId } },
+        }),
         prisma.landAnalysis.findMany({
-          where: { farm: { userId } },
+          where: canReadAnyAnalyses ? undefined : { farm: { userId } },
           select: {
             slope: true,
             soilType: true,
@@ -55,7 +60,7 @@ async function getDashboardData(userId: string) {
           },
         }),
         prisma.landAnalysis.findMany({
-          where: { farm: { userId } },
+          where: canReadAnyAnalyses ? undefined : { farm: { userId } },
           take: 6,
           orderBy: { createdAt: "desc" },
           include: {
@@ -122,7 +127,7 @@ export default async function DashboardPage() {
     cropFrequency,
     insights,
     recentAnalyses,
-  } = await getDashboardData(session.user.id);
+  } = await getDashboardData(session.user.id, session.user.role);
 
   const firstName = session.user.name?.split(" ")[0] ?? "Farmer";
   const hasAnalytics = analysisCount > 0;

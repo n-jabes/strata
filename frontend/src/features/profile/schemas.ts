@@ -21,10 +21,6 @@ export const updateProfileSchema = z.object({
     .optional()
     .or(z.literal(""))
     .transform((value) => (value && value.trim() ? value.trim() : undefined)),
-  farmSize: z
-    .union([z.coerce.number().min(0).max(1_000_000), z.literal(""), z.undefined()])
-    .transform((value) => (value === "" || value === undefined ? undefined : value)),
-  soilType: optionalString(80),
   experienceLevel: z
     .enum(PROFILE_EXPERIENCE_LEVELS)
     .optional()

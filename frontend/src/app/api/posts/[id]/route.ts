@@ -7,6 +7,7 @@ import {
   getPostById,
   updatePost,
 } from "@/features/community/posts/service";
+import { hasPermission } from "@/lib/auth/rbac";
 
 function zodErrorResponse(error: { flatten: () => { fieldErrors: unknown; formErrors: unknown } }) {
   const flattened = error.flatten();
@@ -22,7 +23,7 @@ function zodErrorResponse(error: { flatten: () => { fieldErrors: unknown; formEr
   );
 }
 
-async function getOwnedPost(postId: string, userId: string) {
+async function getOwnedPost(postId: string, userId: string, role?: string) {
   const post = await prisma.post.findUnique({
     where: { id: postId },
     select: { id: true, userId: true },
@@ -31,7 +32,8 @@ async function getOwnedPost(postId: string, userId: string) {
   if (!post) {
     return { status: 404 as const, error: "Post not found" };
   }
-  if (post.userId !== userId) {
+  const canDeleteAny = hasPermission(role, "community.posts.delete.any");
+  if (post.userId !== userId && !canDeleteAny) {
     return { status: 403 as const, error: "Forbidden" };
   }
 
@@ -63,7 +65,7 @@ export async function PATCH(
   }
 
   const { id } = await context.params;
-  const ownership = await getOwnedPost(id, session.user.id);
+  const ownership = await getOwnedPost(id, session.user.id, session.user.role);
   if (ownership.status !== 200) {
     return NextResponse.json({ error: ownership.error }, { status: ownership.status });
   }
@@ -88,7 +90,7 @@ export async function DELETE(
   }
 
   const { id } = await context.params;
-  const ownership = await getOwnedPost(id, session.user.id);
+  const ownership = await getOwnedPost(id, session.user.id, session.user.role);
   if (ownership.status !== 200) {
     return NextResponse.json({ error: ownership.error }, { status: ownership.status });
   }

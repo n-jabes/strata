@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { FarmMap } from "@/components/map/FarmMap";
 import type { FarmMapMarkerData } from "@/components/map/FarmMarker";
+import { hasPermission } from "@/lib/auth/rbac";
 
 export const metadata: Metadata = {
   title: "Farm Map — STRATA",
@@ -17,10 +18,11 @@ export const metadata: Metadata = {
 export default async function FarmMapPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
+  const canReadAny = hasPermission(session.user.role, "farms.read.any");
 
   const farms = await prisma.farm.findMany({
     where: {
-      userId: session.user.id,
+      ...(canReadAny ? {} : { userId: session.user.id }),
       latitude: { not: null },
       longitude: { not: null },
     },

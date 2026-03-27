@@ -5,6 +5,7 @@ import {
   deletePostComment,
   editPostComment,
 } from "@/features/community/posts/service";
+import { hasPermission } from "@/lib/auth/rbac";
 
 const editCommentSchema = z.object({
   content: z.string().trim().min(1).max(600),
@@ -57,8 +58,9 @@ export async function DELETE(
   }
 
   const { id: postId, commentId } = await context.params;
+  const isAdmin = hasPermission(session.user.role, "community.comments.delete.any");
   try {
-    const result = await deletePostComment(postId, commentId, session.user.id);
+    const result = await deletePostComment(postId, commentId, session.user.id, isAdmin);
     return NextResponse.json(result);
   } catch (error) {
     if (error instanceof Error) {

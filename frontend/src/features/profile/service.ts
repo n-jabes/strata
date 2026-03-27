@@ -108,8 +108,6 @@ export async function updateProfile(userId: string, input: UpdateProfileInput) {
     location: input.location,
     bio: input.bio,
     profilePicture: input.profilePicture,
-    farmSize: input.farmSize,
-    soilType: input.soilType,
     experienceLevel: input.experienceLevel,
   };
 

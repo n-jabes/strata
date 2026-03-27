@@ -8,6 +8,7 @@ import { prisma } from "@/lib/prisma";
 import { auth } from "@/auth";
 import { cn } from "@/lib/utils";
 import type { ErosionRisk } from "@/features/land-analysis/types";
+import { hasPermission, isAdminRole } from "@/lib/auth/rbac";
 
 export const metadata: Metadata = {
   title: "Analysis History — STRATA",
@@ -19,10 +20,11 @@ const EROSION_BADGE: Record<ErosionRisk, string> = {
   High: "bg-red-100 text-red-700",
 };
 
-async function getAnalyses(userId: string) {
+async function getAnalyses(userId: string, role?: string) {
+  const canReadAny = hasPermission(role, "analyses.read.any");
   try {
     return await prisma.landAnalysis.findMany({
-      where: { farm: { userId } },
+      where: canReadAny ? undefined : { farm: { userId } },
       orderBy: { createdAt: "desc" },
       include: {
         farm: true,
@@ -39,8 +41,9 @@ async function getAnalyses(userId: string) {
 export default async function AnalysisHistoryPage() {
   const session = await auth();
   if (!session?.user?.id) redirect("/login");
+  const isAdmin = isAdminRole(session.user.role);
 
-  const analyses = await getAnalyses(session.user.id);
+  const analyses = await getAnalyses(session.user.id, session.user.role);
 
   return (
     <main className="min-h-0 py-8 sm:py-10 lg:py-12 bg-transparent">
@@ -54,7 +57,7 @@ export default async function AnalysisHistoryPage() {
                 Analysis History
               </div>
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">
-                All Analyses
+                {isAdmin ? "All Analyses" : "My Analyses"}
               </h1>
               <p className="text-sm sm:text-base text-gray-500 mt-1">
                 {analyses.length > 0

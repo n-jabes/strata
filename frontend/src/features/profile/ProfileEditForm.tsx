@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
-import { PROFILE_EXPERIENCE_LEVELS, PROFILE_SOIL_TYPES } from "./constants";
+import { PROFILE_EXPERIENCE_LEVELS } from "./constants";
 import { updateProfileSchema } from "./schemas";
 
 type ProfileFormData = {
@@ -12,8 +12,6 @@ type ProfileFormData = {
   location: string;
   bio: string;
   profilePicture: string;
-  farmSize: string;
-  soilType: string;
   experienceLevel: string;
 };
 
@@ -22,8 +20,6 @@ type ProfilePayload = {
   location?: string;
   bio?: string;
   profilePicture?: string;
-  farmSize?: number;
-  soilType?: string;
   experienceLevel?: (typeof PROFILE_EXPERIENCE_LEVELS)[number];
 };
 
@@ -37,7 +33,6 @@ export function ProfileEditForm({ initialData }: { initialData: ProfileFormData 
     value: level,
     label: level.charAt(0) + level.slice(1).toLowerCase(),
   }));
-  const soilOptions = PROFILE_SOIL_TYPES.map((type) => ({ value: type, label: type }));
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -50,8 +45,6 @@ export function ProfileEditForm({ initialData }: { initialData: ProfileFormData 
         location: form.location,
         bio: form.bio,
         profilePicture: form.profilePicture,
-        farmSize: form.farmSize === "" ? undefined : Number(form.farmSize),
-        soilType: form.soilType,
         experienceLevel:
           form.experienceLevel === ""
             ? undefined
@@ -101,21 +94,6 @@ export function ProfileEditForm({ initialData }: { initialData: ProfileFormData 
           label="Profile Picture URL"
           value={form.profilePicture}
           onChange={(e) => setForm((prev) => ({ ...prev, profilePicture: e.target.value }))}
-        />
-        <Input
-          id="farmSize"
-          label="Farm Size (ha)"
-          type="number"
-          value={form.farmSize}
-          onChange={(e) => setForm((prev) => ({ ...prev, farmSize: e.target.value }))}
-        />
-        <Select
-          id="soilType"
-          label="Soil Type"
-          value={form.soilType}
-          onChange={(value) => setForm((prev) => ({ ...prev, soilType: value }))}
-          options={soilOptions}
-          placeholder="Select soil type"
         />
         <Select
           id="experienceLevel"
