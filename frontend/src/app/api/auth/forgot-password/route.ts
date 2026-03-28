@@ -1,7 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createPasswordResetToken } from "@/features/auth/password-reset";
+import { sendPasswordResetEmail } from "@/lib/email/send-password-reset";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
+
+function resolveAppOrigin(request: Request): string {
+  const fromEnv =
+    process.env.AUTH_URL?.trim() || process.env.NEXT_PUBLIC_SITE_URL?.trim();
+  if (fromEnv) {
+    return fromEnv.replace(/\/$/, "");
+  }
+  return new URL(request.url).origin;
+}
 
 const forgotPasswordSchema = z.object({
   email: z.string().trim().email(),
@@ -49,8 +59,16 @@ export async function POST(request: Request) {
 
   const token = await createPasswordResetToken(normalizedEmail);
 
-  const origin = new URL(request.url).origin;
+  const origin = resolveAppOrigin(request);
   const resetUrl = token ? `${origin}/reset-password?token=${token}` : null;
+
+  if (token) {
+    await sendPasswordResetEmail({
+      to: normalizedEmail,
+      token,
+      baseUrl: origin,
+    });
+  }
   const shouldExposeResetUrl =
     process.env.NODE_ENV !== "production" &&
     process.env.EXPOSE_RESET_LINKS === "true";
