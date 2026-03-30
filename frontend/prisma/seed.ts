@@ -2,9 +2,9 @@ import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma";
 
-const DEFAULT_SUPER_ADMIN_EMAIL = "nshutij7@gmail.com";
+const DEFAULT_SUPER_ADMIN_EMAIL = "strata@yopmail.com";
 const DEFAULT_SUPER_ADMIN_NAME = "Super Admin";
-const DEFAULT_SUPER_ADMIN_PASSWORD = "ChangeMe123!";
+const DEFAULT_SUPER_ADMIN_PASSWORD = "Testing@123";
 
 async function main() {
   const databaseUrl = process.env.DATABASE_URL;
