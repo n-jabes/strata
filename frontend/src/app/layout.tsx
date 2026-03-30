@@ -15,6 +15,10 @@ export const metadata: Metadata = {
   title: "STRATA – Smart Terraced Agriculture for Africa",
   description:
     "STRATA helps farmers analyze hillside land and generate sustainable cultivation plans.",
+  icons: {
+    icon: "/terraced_hill.png",
+    apple: "/terraced_hill.png",
+  },
 };
 
 export default function RootLayout({
